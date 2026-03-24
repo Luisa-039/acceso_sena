@@ -11,12 +11,19 @@ import DataTable from "@/examples/Tables/DataTable";
 import RolEditModal from "@/components/roles/rol_edit";
 import RolCreateModal from "@/components/roles/rol_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function Roles() {
   const [roles, setRoles] = useState([]);
   const [selectedRol, setSelectedRol] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
+  const { permisos, isAdmin } = usePermissions(MODULOS.ROLES);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
   const fetchRoles = async () => {
     const res = await apiFetch(`rol/all/roles`);
@@ -29,6 +36,8 @@ function Roles() {
   }, []);
 
   async function handleToggleEstado(rol) {
+    if (!canChangeState) return;
+
     const nuevoEstado = !rol.estado;
     try {
       await apiFetch(`rol/estado/${rol.id_rol}?estado_rol=${nuevoEstado}`, {
@@ -49,6 +58,8 @@ function Roles() {
 
   //Función para actualizar usuario
   async function handleUpdateRol(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `rol/by_id/${selectedRol.id_rol}`,
@@ -78,6 +89,8 @@ function Roles() {
   }
 
   async function handleCreateRol(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`rol/crear`, {
         method: "POST",
@@ -116,6 +129,10 @@ function Roles() {
         const value = info.getValue();
         const rol = info.row.original.rol;
 
+        if (!canChangeState) {
+          return value ? "Activo" : "Inactivo";
+        }
+
         return (
           <MDButton
             variant="text"
@@ -128,20 +145,24 @@ function Roles() {
         );
       }
     },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedRol(row.original.rol)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedRol(row.original.rol)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const rows = roles.map((rol) => ({
@@ -164,16 +185,18 @@ function Roles() {
               table={{ columns, rows }}
               canSearch
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
-                >
-                  Registrar rol
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
+                  >
+                    Registrar rol
+                  </MDButton>
+                ) : null
               }
             />
 
           </MDBox>
         </Card>
-         <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+         <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
           <MDBox p={3}>
             <RolCreateModal
               onSave={(data) => {
@@ -184,7 +207,7 @@ function Roles() {
           </MDBox>
         </Dialog>
   
-        <Dialog open={Boolean(selectedRol)} onClose={() => setSelectedRol(null)}>
+        <Dialog open={Boolean(selectedRol) && canUpdate} onClose={() => setSelectedRol(null)}>
 
           <MDBox p={3}>
             <RolEditModal

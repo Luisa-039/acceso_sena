@@ -11,6 +11,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import PermisoEditModal from "@/components/permisos/permiso_edit";
 import PermisoCreateModal from "@/components/permisos/permiso_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function permisos() {
@@ -21,6 +23,9 @@ function permisos() {
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos: permisosModulo, isAdmin } = usePermissions(MODULOS.PERMISOS);
+  const canInsert = isAdmin || permisosModulo.insertar;
+  const canUpdate = isAdmin || permisosModulo.actualizar;
 
   const fetchPermisos = async () => {
     const params = new URLSearchParams({
@@ -50,6 +55,8 @@ function permisos() {
 
   //Función para actualizar permiso
   async function handleUpdatePermiso(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `permisos/${selectedPermisos.id_modulo}/${selectedPermisos.id_rol}`,
@@ -72,6 +79,8 @@ function permisos() {
   }
 
   async function handleCreatePermiso(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`permisos/crear`, {
         method: "POST",
@@ -130,20 +139,24 @@ function permisos() {
     {
       header: "Eliminar", accessorKey: "borrar", cell: (info) => renderPermisoEstado(info.getValue())
     },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedPermisos(row.original.permiso)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedPermisos(row.original.permiso)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const rows = permisos.map((permiso) => ({
@@ -169,10 +182,12 @@ function permisos() {
               canSearch
               onSearchChange={handleSearchPermisos}
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
-                >
-                  Registrar permiso
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
+                  >
+                    Registrar permiso
+                  </MDButton>
+                ) : null
               }
 
               pagination={{
@@ -185,7 +200,7 @@ function permisos() {
 
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
           <MDBox p={3}>
             <PermisoCreateModal
               onSave={(data) => {
@@ -196,7 +211,7 @@ function permisos() {
           </MDBox>
         </Dialog>
 
-        <Dialog open={Boolean(selectedPermisos)} onClose={() => setSelectedPermisos(null)}>
+        <Dialog open={Boolean(selectedPermisos) && canUpdate} onClose={() => setSelectedPermisos(null)}>
           <MDBox p={3}>
             <PermisoEditModal
               onSave={handleUpdatePermiso}

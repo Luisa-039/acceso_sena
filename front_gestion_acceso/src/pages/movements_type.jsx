@@ -11,6 +11,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import Type_movCreateModal from "@/components/type_mov/typeMov_create";
 import Type_movEditModal from "@/components/type_mov/typeMov_edit";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function type_mov() {
@@ -18,6 +20,9 @@ function type_mov() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedType_mov, setSelectedType_mov] = useState(null);
+  const { permisos, isAdmin } = usePermissions(MODULOS.TIPO_MOVIMIENTOS);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
 
   const fetchType_mov = async () => {
     const res = await apiFetch(`type/all-movements-types`);
@@ -30,6 +35,8 @@ function type_mov() {
   }, []);
 
   async function handleUpdateType_mov(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `type/by-id/${selectedType_mov.id_tipo}`,
@@ -53,6 +60,8 @@ function type_mov() {
   }
 
   async function handleCreateType_mov(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`type/crear`, {
         method: "POST",
@@ -85,23 +94,27 @@ function type_mov() {
   const columns = [
     { header: "Tipo movimiento", accessorKey: "nombre_tipo" },
     { header: "Descripción", accessorKey: "descripcion" },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => {
-            setSelectedType_mov(row.original.type_mov);
-            setOpenEdit(true);
-          }}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => {
+                  setSelectedType_mov(row.original.type_mov);
+                  setOpenEdit(true);
+                }}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const rows = type_mov.map((type_mov) => ({
@@ -122,16 +135,18 @@ function type_mov() {
               table={{ columns, rows }}
               canSearch
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
-                >
-                  Registrar tipo de movimiento
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
+                  >
+                    Registrar tipo de movimiento
+                  </MDButton>
+                ) : null
               }
             />
 
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
           <MDBox p={3}>
             <Type_movCreateModal
               onSave={(data) => {
@@ -141,7 +156,7 @@ function type_mov() {
             />
           </MDBox>
         </Dialog>
-        <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
+        <Dialog open={openEdit && canUpdate} onClose={() => setOpenEdit(false)}>
           <MDBox p={3}>
             <Type_movEditModal
               onSave={handleUpdateType_mov}

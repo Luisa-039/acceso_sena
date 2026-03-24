@@ -11,6 +11,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import Modulo_CreateModal from "@/components/modulos/modulos_create";
 import ModuloEditModal from "@/components/modulos/modulos_edit";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function modulo_mov() {
@@ -22,6 +24,9 @@ function modulo_mov() {
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedModulo, setSelectedModulo] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.MODULOS);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
 
   const fetchModulo = async () => {
     const params = new URLSearchParams({
@@ -49,6 +54,8 @@ function modulo_mov() {
   };
 
   async function handleUpdateModulo(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `modulo/by_id/${selectedModulo.id_modulo}`,
@@ -72,6 +79,8 @@ function modulo_mov() {
   }
 
   async function handleCreatemodulo(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`modulo/crear`, {
         method: "POST",
@@ -103,23 +112,27 @@ function modulo_mov() {
 
   const columns = [
     { header: "Nombre del modulo", accessorKey: "nombre" },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => {
-            setSelectedModulo(row.original.modulo);
-            setOpenEdit(true);
-          }}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => {
+                  setSelectedModulo(row.original.modulo);
+                  setOpenEdit(true);
+                }}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const rows = modulos.map((modulo) => ({
@@ -140,10 +153,12 @@ function modulo_mov() {
               canSearch
               onSearchChange={handleSearchModulos}
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
-                >
-                  Registrar modulo
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
+                  >
+                    Registrar modulo
+                  </MDButton>
+                ) : null
               }
               pagination={{
                 manual: true,
@@ -155,7 +170,7 @@ function modulo_mov() {
 
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
           <MDBox p={3}>
             <Modulo_CreateModal
               onSave={(data) => {
@@ -165,7 +180,7 @@ function modulo_mov() {
             />
           </MDBox>
         </Dialog>
-        <Dialog open={openEdit} onClose={() => setOpenEdit(false)}>
+        <Dialog open={openEdit && canUpdate} onClose={() => setOpenEdit(false)}>
           <MDBox p={3}>
             <ModuloEditModal
               onSave={handleUpdateModulo}

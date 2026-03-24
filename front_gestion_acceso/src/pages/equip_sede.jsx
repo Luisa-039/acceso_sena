@@ -13,6 +13,8 @@ import Equipo_sedeCreateModal from "@/components/equipments_sede/equipments_Sede
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 function Equips_sede() {
   const [Equips_sede, setEquips_sede] = useState([]);
@@ -22,6 +24,11 @@ function Equips_sede() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.EQUIPOS_SEDE);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
   const fetchEquips_sedes = async () => {
     const params = new URLSearchParams({
@@ -56,6 +63,8 @@ function Equips_sede() {
 
   //fución para cambiar el estado
   async function handleToggleEstado(equipo, nuevoEstado) {
+    if (!canChangeState) return;
+
     try {
       await apiFetch(`equipments_sede/estado/${equipo.id_equipo_sede}?estado_equip=${nuevoEstado}`, {
         method: "PUT"
@@ -105,6 +114,8 @@ const getEstadoStyle = (estado) => ({
 });
 
   async function handleCreateEquipo(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`equipments_sede/crear`, {
         method: "POST",
@@ -121,6 +132,8 @@ const getEstadoStyle = (estado) => ({
 
   //Función para actualizar equipo
   async function handleUpdateEquip_sede(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `equipments_sede/by_id/${selectedEquips_sede.id_equipo_sede}`,
@@ -203,6 +216,10 @@ const getEstadoStyle = (estado) => ({
         const value = info.getValue();
         const equipo = info.row.original.equipement_sede;
 
+        if (!canChangeState) {
+          return value;
+        }
+
         return (
           <MDInput
             select
@@ -220,19 +237,24 @@ const getEstadoStyle = (estado) => ({
         );
       }
     },
-    { id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedEquips_sede(row.original.equipement_sede)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedEquips_sede(row.original.equipement_sede)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const formatearFecha = (fechaString) => {
@@ -274,9 +296,11 @@ const getEstadoStyle = (estado) => ({
               canSearch
               onSearchChange={handleSearchEquipsSede}
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
-                  Registrar equipo
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
+                    Registrar equipo
+                  </MDButton>
+                ) : null
               }
 
               pagination={{
@@ -288,7 +312,7 @@ const getEstadoStyle = (estado) => ({
             />
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
             <MDBox p={3}>
               <Equipo_sedeCreateModal
                 onSave={(data) => {
@@ -298,7 +322,7 @@ const getEstadoStyle = (estado) => ({
               />
             </MDBox>
           </Dialog>
-        <Dialog open={Boolean(selectedEquips_sede)} onClose={() => setSelectedEquips_sede(null)}>
+        <Dialog open={Boolean(selectedEquips_sede) && canUpdate} onClose={() => setSelectedEquips_sede(null)}>
           <MDBox p={3}>
             <EquipoEdit_sedeModal
               onSave={handleUpdateEquip_sede}

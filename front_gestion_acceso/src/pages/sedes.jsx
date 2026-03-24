@@ -11,6 +11,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import SedeEditModal from "@/components/sedes/sede_edit";
 import SedeCreateModal from "@/components/sedes/sede_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 function Sedes() {
   const [sedes, setSedes] = useState([]);
@@ -20,6 +22,11 @@ function Sedes() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.SEDES);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
 
   const fetchSedes = async () => {
@@ -48,6 +55,8 @@ function Sedes() {
 
   //fución para cambiar el estado
   async function handleToggleEstado(sede) {
+    if (!canChangeState) return;
+
     const nuevoEstado = !sede.estado;
     try {
       await apiFetch(`sede/cambiar-estado/${sede.id_sede}?nuevo_estado=${nuevoEstado}`, {
@@ -67,6 +76,8 @@ function Sedes() {
   }
 
   async function handleCreateSede(data) {
+    if (!canInsert) return;
+
     try {
       apiFetch(`sede/crear-sede`, {
         method: "POST",
@@ -85,6 +96,8 @@ function Sedes() {
 
   //Función para actualizar usuario
   async function handleUpdateSede(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `sede/by-code/${selectedSede.codigo_sede}`,
@@ -134,6 +147,10 @@ function Sedes() {
         const value = info.getValue();
         const sede = info.row.original.sede;
 
+        if (!canChangeState) {
+          return value ? "Activo" : "Inactivo";
+        }
+
         return (
           <MDButton
             variant="text"
@@ -146,20 +163,24 @@ function Sedes() {
         );
       }
     },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedSede(row.original.sede)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedSede(row.original.sede)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const rows = sedes.map((sede) => ({
@@ -184,9 +205,11 @@ function Sedes() {
               onSearchChange={handleSearchSedes}
 
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
-                  Registrar Sede
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
+                    Registrar Sede
+                  </MDButton>
+                ) : null
               }
 
               pagination={{
@@ -198,7 +221,7 @@ function Sedes() {
             />
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
             <MDBox p={3}>
               <SedeCreateModal
                 onSave={(data) => {
@@ -208,7 +231,7 @@ function Sedes() {
               />
             </MDBox>
           </Dialog>
-        <Dialog open={Boolean(selectedSede)} onClose={() => setSelectedSede(null)}>
+        <Dialog open={Boolean(selectedSede) && canUpdate} onClose={() => setSelectedSede(null)}>
           <MDBox p={3}>
             <SedeEditModal
               onSave={handleUpdateSede}

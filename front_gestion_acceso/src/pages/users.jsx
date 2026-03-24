@@ -11,6 +11,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import UserEditModal from "@/components/users/user_edit";
 import UserCreateModal from "@/components/users/user_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function Users() {
@@ -21,6 +23,11 @@ function Users() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.USUARIOS);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
   
  const fetchUsers = async () => {
@@ -49,6 +56,8 @@ function Users() {
   };
 
   async function handleToggleEstado(user) {
+    if (!canChangeState) return;
+
     const nuevoEstado = !user.estado;
     try {
       await apiFetch(`users/cambiar-estado/${user.id_usuario}?nuevo_estado=${nuevoEstado}`, {
@@ -69,6 +78,8 @@ function Users() {
 
   //Función para actualizar usuario
   async function handleUpdateUser(data) {
+  if (!canUpdate) return;
+
   try {
     const response = await apiFetch(
       `users/by_id_user/${selectedUser.id_usuario}`,
@@ -98,6 +109,8 @@ function Users() {
   }
 
   async function handleCreateUser(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`users/crear`, {
         method: "POST",
@@ -142,6 +155,10 @@ function Users() {
     const value = info.getValue();
     const user = info.row.original.user;
 
+    if (!canChangeState) {
+      return value ? "Activo" : "Inactivo";
+    }
+
     return (
       <MDButton
         variant="text"
@@ -154,20 +171,24 @@ function Users() {
       );}
     },
     { header: "Sede", accessorKey: "nombre_sede" },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedUser(row.original.user)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedUser(row.original.user)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const rows = users.map((user) => ({
@@ -194,10 +215,12 @@ function Users() {
                 canSearch
                 onSearchChange={handleSearchUsers}
                 headerActions={
-                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)} 
-                  >
-                    Registrar usuario
-                  </MDButton>
+                  canInsert ? (
+                    <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)} 
+                    >
+                      Registrar usuario
+                    </MDButton>
+                  ) : null
                 }
 
                 pagination={{
@@ -210,7 +233,7 @@ function Users() {
               
             </MDBox>
           </Card>
-          <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+          <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
             <MDBox p={3}>
               <UserCreateModal
                 onSave={(data) => {
@@ -220,7 +243,7 @@ function Users() {
               />
             </MDBox>
           </Dialog>
-          <Dialog open={Boolean(selectedUser)} onClose={() => setSelectedUser(null)}>
+          <Dialog open={Boolean(selectedUser) && canUpdate} onClose={() => setSelectedUser(null)}>
             
             <MDBox p={3}>
               <UserEditModal

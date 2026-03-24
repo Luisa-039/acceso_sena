@@ -11,6 +11,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import EquipoEditModal from "@/components/equipments/equipment_edit";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import EquipoCreateModal from "@/components/equipments/equipments_create";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 function Equips_ext() {
   const [Equips_ext, setEquips_ext] = useState([]);
@@ -20,6 +22,11 @@ function Equips_ext() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.EQUIPOS_EXTERNOS);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
 
   const fetchEquips_exts = async () => {
@@ -48,6 +55,8 @@ function Equips_ext() {
 
   //fución para cambiar el estado
   async function handleToggleEstado(equipo) {
+    if (!canChangeState) return;
+
     const nuevoEstado = !equipo.estado;
     try {
       await apiFetch(`equipments/estado/${equipo.id_equipo}?estado_equip=${nuevoEstado}`, {
@@ -67,6 +76,8 @@ function Equips_ext() {
   }
 
   async function handleCreateEquipo(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`equipments/crear`, {
         method: "POST",
@@ -83,6 +94,8 @@ function Equips_ext() {
 
   //Función para actualizar usuario
   async function handleUpdateEquip(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `equipments/by_id/${selectedEquips_ext.id_equipo}`,
@@ -163,6 +176,10 @@ function Equips_ext() {
         const value = info.getValue();
         const equipo = info.row.original.equipement;
 
+        if (!canChangeState) {
+          return value ? "Activo" : "Inactivo";
+        }
+
         return (
           <MDButton
             variant="text"
@@ -175,20 +192,24 @@ function Equips_ext() {
         );
       }
     },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedEquips_ext(row.original.equipement)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedEquips_ext(row.original.equipement)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const formatearFecha = (fechaString) => {
@@ -229,9 +250,11 @@ function Equips_ext() {
               canSearch
               onSearchChange={handleSearchEquips}
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
-                  Registrar equipo
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
+                    Registrar equipo
+                  </MDButton>
+                ) : null
               }
 
               pagination={{
@@ -243,7 +266,7 @@ function Equips_ext() {
             />
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
             <MDBox p={3}>
               <EquipoCreateModal
                 onSave={(data) => {
@@ -253,7 +276,7 @@ function Equips_ext() {
               />
             </MDBox>
           </Dialog>
-        <Dialog open={Boolean(selectedEquips_ext)} onClose={() => setSelectedEquips_ext(null)}>
+        <Dialog open={Boolean(selectedEquips_ext) && canUpdate} onClose={() => setSelectedEquips_ext(null)}>
           
           <MDBox p={3}>
             <EquipoEditModal

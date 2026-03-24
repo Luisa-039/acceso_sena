@@ -11,6 +11,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import Auth_salidaEditModal from "@/components/auth_salida/auth_salida_edit";
 import Auth_salidaCreateModal from "@/components/auth_salida/auth_salida_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function Auth_salida() {
@@ -21,6 +23,11 @@ function Auth_salida() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.AUTORIZACION_SALIDA);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
 
   const fetchAuth_salida = async () => {
@@ -62,6 +69,8 @@ function Auth_salida() {
 
   //fución para cambiar el estado
   async function handleToggleEstado(auth_salida) {
+    if (!canChangeState) return;
+
     const nuevoEstado = !auth_salida.estado;
     const now = new Date();
     const fecha_actual =
@@ -95,6 +104,8 @@ function Auth_salida() {
   
 
   async function handleCreate_authSalida(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`autorizacion_salida/create`, {
         method: "POST",
@@ -111,6 +122,8 @@ function Auth_salida() {
 
   //Función para actualizar equipo
   async function handleUpdadeAuth_salida(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `autorizacion_salida/${selectedAuth_salida.id_autorizacion}`,
@@ -174,6 +187,10 @@ function Auth_salida() {
         const value = info.getValue();
         const auth_salida = info.row.original.auth_salida;
 
+        if (!canChangeState) {
+          return value ? "Autorizado" : "Pendiente";
+        }
+
         return (
           <MDButton
             variant="text"
@@ -186,20 +203,24 @@ function Auth_salida() {
         );
       }
     },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedAuth_salida(row.original.auth_salida)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedAuth_salida(row.original.auth_salida)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const rows = auth_salida.map((auth_salida) => ({
@@ -226,9 +247,11 @@ function Auth_salida() {
               canSearch
               onSearchChange={handleSearchAuthSalida}
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
-                  Registrar autorización
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
+                    Registrar autorización
+                  </MDButton>
+                ) : null
               }
 
               pagination={{
@@ -240,7 +263,7 @@ function Auth_salida() {
             />
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
           <MDBox p={3}>
             <Auth_salidaCreateModal
               onSave={(data) => {
@@ -250,7 +273,7 @@ function Auth_salida() {
             />
           </MDBox>
         </Dialog>
-        <Dialog open={Boolean(selectedAuth_salida)} onClose={() => setSelectedAuth_salida(null)}>
+        <Dialog open={Boolean(selectedAuth_salida) && canUpdate} onClose={() => setSelectedAuth_salida(null)}>
           <MDBox p={3}>
             <Auth_salidaEditModal
               onSave={handleUpdadeAuth_salida}

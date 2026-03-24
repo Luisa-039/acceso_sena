@@ -10,6 +10,8 @@ import MDButton from "@/components/MDButton";
 import DataTable from "@/examples/Tables/DataTable";
 import DepartmentCreateModal from "@/components/departamentos/department_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function departamentos() {
@@ -19,6 +21,8 @@ function departamentos() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.DEPARTAMENTOS);
+  const canInsert = isAdmin || permisos.insertar;
 
   const fetchDepartamentos = async () => {
     const params = new URLSearchParams({
@@ -30,7 +34,7 @@ function departamentos() {
       params.append("search", searchTerm.trim());
     }
 
-    const res = await apiFetch(`department/all_departments-pag?${params.toString()}`);
+    const res = await apiFetch(`deparment/all_departments-pag?${params.toString()}`);
     setDepartamentos(Array.isArray(res) ? res : res.departamentos || []);
     setTotal(res.total_departments || 0);
   };
@@ -47,6 +51,8 @@ function departamentos() {
 
 
   async function handleCreateDepartamento(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`department/crear`, {
         method: "POST",
@@ -91,10 +97,12 @@ function departamentos() {
               canSearch
               onSearchChange={handleSearchDepartamentos}
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
-                >
-                  Registrar departamento
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
+                  >
+                    Registrar departamento
+                  </MDButton>
+                ) : null
               }
 
               pagination={{
@@ -107,7 +115,7 @@ function departamentos() {
 
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
           <MDBox p={3}>
             <DepartmentCreateModal
               onSave={(data) => {

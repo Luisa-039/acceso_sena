@@ -11,11 +11,18 @@ import DataTable from "@/examples/Tables/DataTable";
 import CentroEditModal from "@/components/centros/center_edit";
 import CentroCreateModal from "@/components/centros/center_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 function Centros() {
   const [centros, setCentros] = useState([]);
   const [selectedCentro, setSelectedCentro] = useState(null);
   const [openCreate, setOpenCreate] = useState(false);
+  const { permisos, isAdmin } = usePermissions(MODULOS.CENTROS);
+  const canInsert = isAdmin || permisos.insertar;
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
 
   const fetchCentros = async () => {
@@ -29,6 +36,8 @@ function Centros() {
 
   //fución para cambiar el estado
   async function handleToggleEstado(center) {
+    if (!canChangeState) return;
+
     const nuevoEstado = !center.estado;
     try {
       await apiFetch(`center/cambiar-estado/${center.id_centro}?nuevo_estado=${nuevoEstado}`, {
@@ -48,6 +57,8 @@ function Centros() {
   }
 
   async function handleCreateCentro(data) {
+    if (!canInsert) return;
+
     try {
       await apiFetch(`center/crear-centro`, {
         method: "POST",
@@ -66,6 +77,8 @@ function Centros() {
 
   // //Función para actualizar usuario
   async function handleUpdateCentro(data) {
+    if (!canUpdate) return;
+
     try {
       const response = await apiFetch(
         `center/by-id/${selectedCentro.id_centro}`,
@@ -115,6 +128,10 @@ function Centros() {
         const value = info.getValue();
         const centro = info.row.original.centro;
 
+        if (!canChangeState) {
+          return value ? "Activo" : "Inactivo";
+        }
+
         return (
           <MDButton
             variant="text"
@@ -127,20 +144,24 @@ function Centros() {
         );
       }
     },
-    {
-      id: "acciones",
-      header: "Acciones",
-      cell: ({ row }) => (
-        <MDButton
-          variant="text"
-          size="small"
-          sx={getEditButtonStyle}
-          onClick={() => setSelectedCentro(row.original.centro)}
-        >
-          Editar
-        </MDButton>
-      ),
-    }
+    ...(canUpdate
+      ? [
+          {
+            id: "acciones",
+            header: "Acciones",
+            cell: ({ row }) => (
+              <MDButton
+                variant="text"
+                size="small"
+                sx={getEditButtonStyle}
+                onClick={() => setSelectedCentro(row.original.centro)}
+              >
+                Editar
+              </MDButton>
+            ),
+          },
+        ]
+      : [])
   ];
 
   const rows = centros.map((centro) => ({
@@ -163,14 +184,16 @@ function Centros() {
               canSearch
 
               headerActions={
-                <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
-                  Registrar Centro
-                </MDButton>
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>
+                    Registrar Centro
+                  </MDButton>
+                ) : null
               }
             />
           </MDBox>
         </Card>
-        <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
             <MDBox p={3}>
               <CentroCreateModal
                 onSave={(data) => {
@@ -180,7 +203,7 @@ function Centros() {
               />
             </MDBox>
           </Dialog>
-        <Dialog open={Boolean(selectedCentro)} onClose={() => setSelectedCentro(null)}>
+        <Dialog open={Boolean(selectedCentro) && canUpdate} onClose={() => setSelectedCentro(null)}>
           <MDBox p={3}>
             <CentroEditModal
               onSave={handleUpdateCentro}

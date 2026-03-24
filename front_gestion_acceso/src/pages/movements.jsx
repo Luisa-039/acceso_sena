@@ -10,6 +10,8 @@ import DataTable from "@/examples/Tables/DataTable";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
+import { usePermissions } from "@/hooks/usePermissions";
+import { MODULOS } from "@/constants/modulos";
 
 
 function movements() {
@@ -20,6 +22,10 @@ function movements() {
   const [openCreate, setOpenCreate] = useState(false);
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const { permisos, isAdmin } = usePermissions(MODULOS.MOVIMIENTO_EQUIPOS);
+  const canUpdate = isAdmin || permisos.actualizar;
+  const canDelete = isAdmin || permisos.borrar;
+  const canChangeState = canUpdate || canDelete;
 
   const fetchMovementTypes = async () => {
     try {
@@ -59,6 +65,8 @@ function movements() {
   };
 
   async function handleToggleEstado(movement, nombreMovimiento) {
+    if (!canChangeState) return;
+
     try {
       // Buscar el ID del tipo de movimiento
       const tipoSeleccionado = tiposMovimiento.find(tipo => tipo.nombre_tipo === nombreMovimiento);
@@ -125,6 +133,20 @@ function movements() {
       cell: (info) => {
         const value = info.getValue();
         const movement = info.row.original.movements;
+
+        if (!canChangeState) {
+          return (
+            <MDTypography
+              variant="caption"
+              sx={{
+                color: estadoStyles[value] || "text.primary",
+                fontWeight: 600,
+              }}
+            >
+              {value}
+            </MDTypography>
+          );
+        }
 
         return (
           <MDInput
