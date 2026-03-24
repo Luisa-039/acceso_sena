@@ -13,6 +13,7 @@ import Departamentos from "@/pages/departamentos";
 import Permisos from "@/pages/permisos";
 import Movements_type from "@/pages/movements_type";
 import Modulos from "@/pages/modulos";
+import Ciudades from "@/pages/ciudades";
 import DashboardLayout from "./examples/LayoutContainers/DashboardLayout";
 import { MODULOS } from "@/constants/modulos";
 
@@ -35,9 +36,8 @@ const routes = [
       { path: "permisos", element: <Permisos /> },
       { path: "departamentos", element: <Departamentos /> },
       { path: "tipos-movimientos", element: <Movements_type /> },
-      { path: "modulos", element: <Modulos /> }
-
-      
+      { path: "modulos", element: <Modulos /> },
+      { path: "ciudades", element: <Ciudades /> }  
     ],
   },
   {
@@ -150,7 +150,15 @@ const routes = [
     route: "modulos",
     idModulo: MODULOS.MODULOS,
     component: <Modulos />,
-  }
+  },
+  {
+    type: "collapse",
+    name: "Ciudades",
+    key: "ciudades",
+    route: "ciudades",
+    idModulo: MODULOS.CIUDADES,
+    component: <Ciudades />,
+  },
 ];
 
 export default routes;

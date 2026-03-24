@@ -18,6 +18,7 @@ import Roles from "@/pages/roles";
 import Permisos from "@/pages/permisos";
 import Departamentos from "@/pages/departamentos";
 import Movements_type from "@/pages/movements_type";
+import Ciudades from "@/pages/ciudades";
 import Modulos from "@/pages/modulos";
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
         <Route path="departamentos" element={<Departamentos />} />
         <Route path="tipos-movimientos" element={<Movements_type />} />
         <Route path="modulos" element={<Modulos />} />
+        <Route path="ciudades" element={<Ciudades />} />
       </Route>
     </Routes>
   );
