@@ -1,0 +1,23 @@
+// src/constants/modulos.js
+export const MODULOS = {
+  MODULOS:               1,
+  PERMISOS:              2,
+  ROLES:                 3,
+  USUARIOS:              4,
+  REGISTROS_ACCESO:      5,
+  PERSONAS:              6,
+  EQUIPOS_EXTERNOS:      7,
+  SEDES:                 8,
+  CENTROS:               9,
+  EQUIPOS_SEDE:         10,
+  MOVIMIENTO_EQUIPOS:   11,
+  AUTORIZACION_SALIDA:  12,
+  CIUDADES:             13,
+  DEPARTAMENTOS:        14,
+  INVENTARIO_CONSUMIBLES: 15,
+  CATEGORIAS:           16,
+  AREAS:                17,
+  ENCUESTAS:            18,
+  TIPO_MOVIMIENTOS:     19
+
+};
