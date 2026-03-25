@@ -22,6 +22,7 @@ import Ciudades from "@/pages/ciudades";
 import Modulos from "@/pages/modulos";
 import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
+import Encuestas from "@/pages/encuestas";
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
         <Route path="ciudades" element={<Ciudades />} />
         <Route path="categorias" element={<Categorias />} />
         <Route path="areas" element={<Areas />} />
+        <Route path="encuestas" element={<Encuestas />} />
       </Route>
     </Routes>
   );

@@ -18,6 +18,7 @@ import DashboardLayout from "./examples/LayoutContainers/DashboardLayout";
 import { MODULOS } from "@/constants/modulos";
 import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
+import Encuestas from "./pages/encuestas";
 
 
 const routes = [
@@ -41,8 +42,8 @@ const routes = [
       { path: "modulos", element: <Modulos /> },
       { path: "ciudades", element: <Ciudades /> },
       { path: "categorias", element: <Categorias /> },
-      { path: "areas", element: <Areas /> }
-      
+      { path: "areas", element: <Areas /> },
+      { path: "encuestas", element: <Encuestas /> }
     ],
   },
   {
@@ -179,6 +180,14 @@ const routes = [
     route: "areas",
     idModulo: MODULOS.AREAS,
     component: <Areas />,
+  },
+  {
+    type: "collapse",
+    name: "Encuestas",
+    key: "encuestas",
+    route: "encuestas",
+    idModulo: MODULOS.ENCUESTAS,
+    component: <Encuestas />,
   },
 ];
 
