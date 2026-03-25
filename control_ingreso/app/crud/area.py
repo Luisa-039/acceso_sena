@@ -12,10 +12,10 @@ def create_area(db: Session, area: AreaCreate) -> Optional[bool]:
     try:
         query = text("""
             INSERT INTO areas (
-                nombre_area, sede_id,
+                nombre_area,
                 estado
             ) VALUES (
-                :nombre_area, :sede_id,
+                :nombre_area,
                 :estado
             )
         """)
@@ -29,11 +29,8 @@ def create_area(db: Session, area: AreaCreate) -> Optional[bool]:
     
 def get_area_by_id(db: Session, id: int):
     try:
-        query = text("""SELECT a.id_area, a.nombre_area, 
-                     a.sede_id, s.nombre AS nombre_sede,
-                     a.estado
-                     FROM areas a
-                     INNER JOIN sedes s ON a.sede_id = s.id_sede
+        query = text("""SELECT id_area, nombre_area, estado
+                     FROM areas
                      WHERE id_area = :id
                 """)
         
@@ -45,11 +42,8 @@ def get_area_by_id(db: Session, id: int):
 
 def get_all_areas(db: Session):
     try:
-        query = text("""SELECT a.id_area, a.nombre_area, 
-                     a.sede_id, s.nombre AS nombre_sede,
-                     a.estado
+        query = text("""SELECT a.id_area, a.nombre_area, a.estado
                      FROM areas a
-                     INNER JOIN sedes s ON a.sede_id = s.id_sede
                      """)
         result = db.execute(query).mappings().all()
         return result
@@ -113,10 +107,8 @@ def get_all_areas_pag(db: Session, skip:int = 0, limit = 10):
         total_result = db.execute(count_query).scalar()
 
         #2 Consultar las áreas
-        data_query = text("""SELECT a.id_area, a.nombre_area, a.sede_id,
-                          s.nombre as nombre_sede, a.estado
+        data_query = text("""SELECT a.id_area, a.nombre_area, a.estado
                     FROM areas a
-                    INNER JOIN sedes s ON a.sede_id = s.id_sede
                      LIMIT :limit OFFSET :skip
         """)
         areas_list = db.execute(data_query,{"skip": skip, "limit": limit}).mappings().all()

@@ -4,20 +4,18 @@ import MDButton from "@/components/MDButton";
 import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
 
-export default function CategoriaEditModal({ onCancel, categoria, onSave }) {
+export default function AreaEditModal({ onCancel, area, onSave }) {
   const [form, setForm] = useState({
-    nombre_categoria: "",
-    descripcion: ""
+    nombre_area: ""
   });
 
   useEffect(() => {
-    if (categoria) {
+    if (area) {
       setForm({
-        nombre_categoria: categoria.nombre_categoria,
-        descripcion: categoria.descripcion,
+        nombre_area: area.nombre_area,
       });
     }
-  }, [categoria]);
+  }, [area]);
 
 
   function handleChange(e) {
@@ -31,22 +29,13 @@ export default function CategoriaEditModal({ onCancel, categoria, onSave }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <MDTypography variant="h6" mb={3}>Editar categoría</MDTypography>
+      <MDTypography variant="h6" mb={3}>Editar área</MDTypography>
 
        <MDBox mb={2}>
         <MDInput
-          label="Nombre categoría"
-          name="nombre_categoria"
-          value={form.nombre_categoria || ""}
-          onChange={handleChange}
-        />
-      </MDBox>
-
-       <MDBox mb={2}>
-        <MDInput
-          label="Descripción"
-          name="descripcion"
-          value={form.descripcion || ""}
+          label="Nombre área"
+          name="nombre_area"
+          value={form.nombre_area || ""}
           onChange={handleChange}
         />
       </MDBox>

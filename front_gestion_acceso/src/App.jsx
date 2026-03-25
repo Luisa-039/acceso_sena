@@ -21,6 +21,7 @@ import Movements_type from "@/pages/movements_type";
 import Ciudades from "@/pages/ciudades";
 import Modulos from "@/pages/modulos";
 import Categorias from "@/pages/categorias";
+import Areas from "@/pages/areas";
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
         <Route path="modulos" element={<Modulos />} />
         <Route path="ciudades" element={<Ciudades />} />
         <Route path="categorias" element={<Categorias />} />
+        <Route path="areas" element={<Areas />} />
       </Route>
     </Routes>
   );

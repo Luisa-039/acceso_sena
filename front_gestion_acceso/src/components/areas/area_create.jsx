@@ -4,11 +4,10 @@ import MDButton from "@/components/MDButton";
 import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
 
-function CategoriaCreateModal({ onSave, onCancel }) {
+function AreaCreateModal({ onSave, onCancel }) {
 
   const [form, setForm] = useState({
-    nombre_categoria: "",
-    descripcion: "",
+    nombre_area: "",
     estado: true
   });
 
@@ -22,23 +21,14 @@ function CategoriaCreateModal({ onSave, onCancel }) {
     <form onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
 
       <MDTypography variant="h6" mb={3}>
-        Registrar categoría
+        Registrar área
       </MDTypography>
 
       <MDBox mb={2}>
         <MDInput
-          label="Nombre categoría"
-          name="nombre_categoria"
-          value={form.nombre_categoria}
-          onChange={handleChange}
-        />
-      </MDBox>
-
-      <MDBox mb={2}>
-        <MDInput
-          label="Descripción"
-          name="descripcion"
-          value={form.descripcion}
+          label="Nombre área"
+          name="nombre_area"
+          value={form.nombre_area}
           onChange={handleChange}
         />
       </MDBox>
@@ -57,4 +47,4 @@ function CategoriaCreateModal({ onSave, onCancel }) {
   );
 }
 
-export default CategoriaCreateModal;
+export default AreaCreateModal;

@@ -3,7 +3,6 @@ from typing import List, Optional
     
 class AreaBase(BaseModel):
     nombre_area: str = Field(min_length=3, max_length=50)
-    sede_id: int
     estado: bool
 
 class AreaCreate(AreaBase):
@@ -18,8 +17,7 @@ class AreaEstado(BaseModel):
 class AreaOut(AreaBase):
     id_area: int
     nombre_area: str
-    sede_id: int
-    nombre_sede: str
+
 
 class PaginatedAreas(BaseModel):
     page: int
