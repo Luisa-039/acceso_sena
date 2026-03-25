@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions"; // Importamos tu hook
 
 // react-router-dom components
@@ -11,6 +11,10 @@ import PropTypes from "prop-types";
 import List from "@mui/material/List";
 import Divider from "@mui/material/Divider";
 import Link from "@mui/material/Link";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 // Material Dashboard 2 React components
 import MDBox from "@/components/MDBox";
@@ -35,6 +39,7 @@ import {
 function SidenavItem({ route, textColor }) {
   // Usamos el idModulo definido en routes.jsx (antes lo llamabas 'modulo', cámbialo a idModulo para consistencia)
   const { permisos, isAdmin } = usePermissions(route.idModulo);
+  const [openAccordion, setOpenAccordion] = useState(false);
 
   // Si la ruta es de tipo "collapse" y tiene un idModulo, validamos el permiso 'seleccionar'
   if (route.type === "collapse" && route.idModulo && !isAdmin && !permisos.seleccionar) {
@@ -94,6 +99,56 @@ function SidenavItem({ route, textColor }) {
     );
   }
 
+  if (route.type === "accordion") {
+    const children = Array.isArray(route.collapse) ? route.collapse : [];
+
+    return (
+      <Accordion
+        key={route.key}
+        disableGutters
+        elevation={0}
+        square
+        expanded={openAccordion}
+        onChange={(_event, expanded) => setOpenAccordion(expanded)}
+        sx={{
+          backgroundColor: "transparent",
+          color: "inherit",
+          "&:before": { display: "none" },
+          boxShadow: "none",
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon sx={{ color: "#ffffff" }} />}
+          sx={{
+            minHeight: 44,
+            "& .MuiAccordionSummary-content": { my: 0.5 },
+            bgcolor: "#00304D",
+            color: "#ffffff", fontSize: "12px",
+            "&:hover": { bgcolor: "#124a7b" },
+          }}
+        >
+          {/* Cambia el color del texto, tamaño del título
+           para que sea visible sobre el fondo oscuro del AccordionSummary */}
+          <MDTypography
+            variant="button"
+            fontWeight="medium"
+            color="inherit"
+            sx={{ fontSize: "12px", lineHeight: 1.2 }}
+          >
+            {route.name}
+          </MDTypography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ pt: 0, pb: 0, pl: 2, bgcolor: "#074c78", fontSize: "10px" }}>
+          <List sx={{ py: 0 }}>
+            {children.map((child) => (
+              <SidenavItem key={child.key} route={child} textColor={textColor} />
+            ))}
+          </List>
+        </AccordionDetails>
+      </Accordion>
+    );
+  }
+
   return null;
 }
 
@@ -111,10 +166,10 @@ function Sidenav({ color = "info", brand = null, brandName, routes, ...rest }) {
 
   // Renderizado de rutas
   const renderRoutes = routes.map((route) => (
-    <SidenavItem 
-      key={route.key} 
-      route={route} 
-      textColor={textColor} 
+    <SidenavItem
+      key={route.key}
+      route={route}
+      textColor={textColor}
     />
   ));
 

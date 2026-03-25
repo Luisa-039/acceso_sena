@@ -1,0 +1,36 @@
+// src/components/Accordion/AccordionComponent.jsx
+import { useState } from "react";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import MDTypography from "@/components/MDTypography";
+
+function AccordionComponent({ items }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const handleChange = (panel) => (event, isExpanded) => {
+    setExpanded(isExpanded ? panel : false);
+  };
+
+  return (
+    <>
+      {items.map((item, index) => (
+        <Accordion
+          key={index}
+          expanded={expanded === `panel${index}`}
+          onChange={handleChange(`panel${index}`)}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <MDTypography variant="h6">{item.title}</MDTypography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {item.content}
+          </AccordionDetails>
+        </Accordion>
+      ))}
+    </>
+  );
+}
+
+export default AccordionComponent;
