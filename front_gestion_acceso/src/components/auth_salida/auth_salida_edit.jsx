@@ -7,7 +7,7 @@ import MDTypography from "@/components/MDTypography";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
-export default function Auth_salidaEditModal({ oncancel, auth_salida, onSave }) {
+export default function Auth_salidaEditModal({ onCancel, auth_salida, onSave }) {
 
   const [nomb_user, setNomb_user] = useState([]);
   const [equipos_sede, setEquipos_sede] = useState([]);
@@ -157,7 +157,7 @@ export default function Auth_salidaEditModal({ oncancel, auth_salida, onSave }) 
         />
       </MDBox>
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
         <MDButton color="info" type="submit" variant="gradient">

@@ -5,7 +5,7 @@ import MDButton from "@/components/MDButton";
 import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
 
-function UserCreateModal({ onSave, oncancel }) {
+function UserCreateModal({ onSave, onCancel }) {
 
   const [form, setForm] = useState({
     nombre_usuario: "",
@@ -166,7 +166,7 @@ function UserCreateModal({ onSave, oncancel }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
 

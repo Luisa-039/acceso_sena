@@ -7,7 +7,7 @@ import MDTypography from "@/components/MDTypography";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
-function Auth_salidaCreateModal({ onSave, oncancel }) {
+function Auth_salidaCreateModal({ onSave, onCancel }) {
 
   const [nomb_user, setNomb_user] = useState([]);
   const [equipos_sede, setEquipos_sede] = useState([]);
@@ -162,7 +162,7 @@ function Auth_salidaCreateModal({ onSave, oncancel }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
 

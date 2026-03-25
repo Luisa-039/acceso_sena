@@ -5,7 +5,7 @@ import MDButton from "@/components/MDButton";
 import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
 
-function SedeCreateModal({ onSave, oncancel }) {
+function SedeCreateModal({ onSave, onCancel }) {
 
   const [form, setForm] = useState({
     codigo_sede: "",
@@ -95,7 +95,7 @@ function SedeCreateModal({ onSave, oncancel }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
 

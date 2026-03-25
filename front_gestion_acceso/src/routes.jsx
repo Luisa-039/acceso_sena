@@ -16,6 +16,7 @@ import Modulos from "@/pages/modulos";
 import Ciudades from "@/pages/ciudades";
 import DashboardLayout from "./examples/LayoutContainers/DashboardLayout";
 import { MODULOS } from "@/constants/modulos";
+import Categorias from "@/pages/categorias";
 
 
 const routes = [
@@ -37,7 +38,11 @@ const routes = [
       { path: "departamentos", element: <Departamentos /> },
       { path: "tipos-movimientos", element: <Movements_type /> },
       { path: "modulos", element: <Modulos /> },
-      { path: "ciudades", element: <Ciudades /> }  
+      { path: "ciudades", element: <Ciudades /> },
+      { path: "categorias", element: <Categorias /> }
+
+
+      
     ],
   },
   {
@@ -158,6 +163,14 @@ const routes = [
     route: "ciudades",
     idModulo: MODULOS.CIUDADES,
     component: <Ciudades />,
+  },
+  {
+    type: "collapse",
+    name: "Categorías",
+    key: "categorias",
+    route: "categorias",
+    idModulo: MODULOS.CATEGORIAS,
+    component: <Categorias />,
   },
 ];
 

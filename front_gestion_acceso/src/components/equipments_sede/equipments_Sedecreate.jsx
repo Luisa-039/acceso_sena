@@ -9,15 +9,16 @@ import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
 
-function Equipo_sedeCreateModal({ onSave, oncancel }) {
+function Equipo_sedeCreateModal({ onSave, onCancel }) {
 
   const [nom_sede, setNom_sede] = useState([]);
 
   const [form, setForm] = useState({
     sede_id: 0,
-    categoria: "",
-    marca_modelo: "",
-    // foto_path: null,
+    categoria_id: "",
+    ubicacion: "",
+    marca: "",
+    modelo: "",
     codigo_barras_equipo: "",
     serial: "",
     descripcion: "",
@@ -25,10 +26,40 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
     fecha_registro: "",
   });
 
+  const [categoria, setCategoria] = useState([]);
+  const [area, setArea] = useState([]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
+
+  useEffect(() => {
+    apiFetch("area/all/areas")
+      .then(data => {
+        if (Array.isArray(data)) {
+          setArea(data);
+        }
+        else if (data.areas) {
+          setArea(data.areas);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
+
+   useEffect(() => {
+    apiFetch("categoria/all/categories")
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCategoria(data);
+        }
+        else if (data.categoria) {
+          setCategoria(data.categoria);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
+
 
   useEffect(() => {
     apiFetch("sede/all/sedes")
@@ -44,63 +75,7 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
       .catch(err => console.error(err));
   }, []);
 
-  // para abrir cámara y tomar foto
-
-  // const [preview, setPreview] = useState(null);
-
-  // const videoRef = useRef(null);
-  // const canvasRef = useRef(null);
-
-  // // funciones cámara
-  // const startCamera = async () => {
-  //   try {
-
-  //     const stream = await navigator.mediaDevices.getUserMedia({
-  //       video: true
-  //     });
-
-  //     videoRef.current.srcObject = stream;
-
-  //   } catch (error) {
-  //     console.error("No se pudo acceder a la cámara", error);
-  //   }
-  // };
-
-  // const takePhoto = () => {
-
-  //   const video = videoRef.current;
-  //   const canvas = canvasRef.current;
-
-  //   canvas.width = video.videoWidth;
-  //   canvas.height = video.videoHeight;
-
-  //   const ctx = canvas.getContext("2d");
-
-  //   ctx.drawImage(video, 0, 0);
-
-  //   canvas.toBlob((blob) => {
-
-  //     const file = new File([blob], "equipo.jpg", {
-  //       type: "image/jpeg"
-  //     });
-
-  //     setForm(prev => ({
-  //       ...prev,
-  //       foto_path: file
-  //     }));
-
-  //     setPreview(URL.createObjectURL(blob));
-
-  //   }, "image/jpeg");
-  // };
-
-  const tiposEquipo = [
-    { value: "Portátil", label: "Portátil" },
-    { value: "PC Mesa", label: "Pc mesa" },
-    { value: "Herramienta", label: "Herramienta" },
-    { value: "Otro", label: "Otro" }
-  ];
-
+ 
   return (
     <form
       onSubmit={(e) => {
@@ -117,9 +92,11 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
 
         const data = {
           sede_id: Number(form.sede_id),
-          categoria: form.categoria,
+          categoria_id: form.categoria_id,
+          area_id: form.area_id,
           serial: form.serial,
-          marca_modelo: form.marca_modelo,
+          marca: form.marca,
+          modelo: form.modelo,
           descripcion: form.descripcion,
           codigo_barras_equipo: form.codigo_barras_equipo,
           fecha_registro: fecha_actual,
@@ -129,13 +106,11 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
       }}
     >
 
+    <MDBox>
       <MDTypography variant="h6" mb={3}>
         Registrar equipo
       </MDTypography>
 
-      <MDBox>
-
-        {/* FORMULARIO */}
         <MDBox>
           <MDBox mb={2}>
             <Autocomplete
@@ -162,20 +137,50 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
           </MDBox>
 
           <MDBox mb={2}>
-            <FormControl fullWidth>
-              <InputLabel>Tipo equipo</InputLabel>
+            <Autocomplete
+              options={Array.isArray(area) ? area : []}
+              getOptionLabel={(option) => option.nombre_area || ""}
+              value={
+                area.find((a) => a.id_area === form.area_id) || null
+              }
+              onChange={(event, newValue) => {
+                setForm({
+                  ...form,
+                  area_id: newValue ? newValue.id_area : "",
+                });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="nombre area"
+                  variant="outlined"
+                  fullWidth
+                />
+              )}
+            />
+          </MDBox>
+
+          
+
+          <MDBox mb={2}>
+            <FormControl size="md">
+              <InputLabel id="categoria-label">Tipo equipo</InputLabel>
               <Select
-                label="Tipo equipo"
-                name="categoria"
-                value={form.categoria || ""}
+                label="categoria-label"
+                name="categoria_id"
+                value={form.categoria_id}
                 onChange={handleChange}
-                sx={{ height: 45 }}
+                sx={{ minWidth: 300, height: 40 }}
+                SelectProps={{ native: true }}
+                InputLabelProps={{ shrink: true }}
               >
-                {tiposEquipo.map((tipo) => (
-                  <MenuItem key={tipo.value} value={tipo.value}>
-                    {tipo.label}
-                  </MenuItem>
-                ))}
+                <MenuItem value="">Seleccione tipo equipo</MenuItem>
+                {Array.isArray(categoria) &&
+                  categoria.map((cat) => (
+                    <MenuItem key={cat.id_categoria} value={cat.id_categoria}>
+                      {cat.nombre_categoria}
+                    </MenuItem>
+                  ))}
               </Select>
 
             </FormControl>
@@ -194,9 +199,19 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
           <MDBox mb={2}>
             <MDInput
               fullWidth
-              label="marca_modelo"
-              name="marca_modelo"
-              value={form.marca_modelo}
+              label="marca"
+              name="marca"
+              value={form.marca}
+              onChange={handleChange}
+            />
+          </MDBox>
+
+          <MDBox mb={2}>
+            <MDInput
+              fullWidth
+              label="modelo"
+              name="modelo"
+              value={form.modelo}
               onChange={handleChange}
             />
           </MDBox>
@@ -221,58 +236,7 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
               onChange={handleChange}
             />
           </MDBox>
-
         </MDBox>
-
-        {/* CÁMARA */}
-        {/* <MDBox item xs={12} md={6}>
-
-          <MDBox display="flex" flexDirection="column" alignItems="flex-start" sx={{ minHeight: "320px" }}
-          >
-
-            <MDButton onClick={startCamera}>
-              Abrir cámara
-            </MDButton>
-
-            <video
-              ref={videoRef}
-              autoPlay
-              style={{
-                width: "100%",
-                maxWidth: "320px",
-                marginTop: "10px",
-                borderRadius: "10px",
-                height: "240px",
-                backgroundColor: "#000000"
-              }}
-            />
-
-            <MDButton
-              onClick={takePhoto}
-              sx={{ mt: 2 }}
-            >
-              Tomar foto
-            </MDButton>
-
-            <canvas
-              ref={canvasRef}
-              style={{ display: "none" }} />
-
-            {preview && (
-              <MDBox mt={2}>
-                <img
-                  src={preview}
-                  alt="Foto equipo"
-                  style={{
-                    width: "300px",
-                    borderRadius: "10px"
-                  }}
-                />
-              </MDBox>
-            )}
-
-          </MDBox>
-        </MDBox> */}
       </MDBox>
 
       <MDBox
@@ -281,7 +245,7 @@ function Equipo_sedeCreateModal({ onSave, oncancel }) {
         gap={1}
         mt={3}
       >
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
 

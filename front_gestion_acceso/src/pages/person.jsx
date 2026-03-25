@@ -244,7 +244,7 @@ function Persons() {
                 onSave={(data) => {
                   handleCreatePerson(data);
                 }}
-                oncancel={() => setOpenCreate(false)}
+                onCancel={() => setOpenCreate(false)}
               />
             </MDBox>
           </Dialog>
@@ -252,7 +252,7 @@ function Persons() {
           <MDBox p={3}>
             <PersonEditModal
               onSave={handleUpdatePerson}
-              oncancel={() => { setSelectedPerson(null) }}
+              onCancel={() => { setSelectedPerson(null) }}
               person={selectedPerson} />
           </MDBox>
         </Dialog>

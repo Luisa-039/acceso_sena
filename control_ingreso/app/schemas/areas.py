@@ -19,6 +19,7 @@ class AreaOut(AreaBase):
     id_area: int
     nombre_area: str
     sede_id: int
+    nombre_sede: str
 
 class PaginatedAreas(BaseModel):
     page: int

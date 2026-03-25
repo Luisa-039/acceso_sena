@@ -8,13 +8,14 @@ import { MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
-function EquipoCreateModal({ onSave, oncancel }) {
+function EquipoCreateModal({ onSave, onCancel }) {
 
   const [propietario, setPropietario] = useState([]);
+  const [categoria, setCategoria] = useState([]);
 
   const [form, setForm] = useState({
     persona_id: 0,
-    tipo_equipo: "",
+    categoria_id: "",
     marca_modelo: "",
     foto_path: null,
     codigo_barras_inv: "",
@@ -28,6 +29,20 @@ function EquipoCreateModal({ onSave, oncancel }) {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
+
+
+  useEffect(() => {
+    apiFetch("categoria/all/categories")
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCategoria(data);
+        }
+        else if (data.categoria) {
+          setCategoria(data.categoria);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
 
   useEffect(() => {
     apiFetch("person/all/person")
@@ -109,7 +124,7 @@ function EquipoCreateModal({ onSave, oncancel }) {
         const data = new FormData();
 
         data.append("persona_id", Number(form.persona_id));
-        data.append("tipo_equipo", form.tipo_equipo);
+        data.append("categoria_id", form.categoria_id);
         data.append("serial", form.serial);
         data.append("marca_modelo", form.marca_modelo);
         data.append("descripcion", form.descripcion);
@@ -158,22 +173,24 @@ function EquipoCreateModal({ onSave, oncancel }) {
           </MDBox>
 
           <MDBox mb={2}>
-            <FormControl fullWidth>
-              <InputLabel>Tipo equipo</InputLabel>
+            <FormControl size="md">
+              <InputLabel id="categoria-label">Tipo equipo</InputLabel>
               <Select
-                label="Tipo equipo"
-                name="tipo_equipo"
-                value={form.tipo_equipo || ""}
+                label="categoria-label"
+                name="categoria_id"
+                value={form.categoria_id}
                 onChange={handleChange}
+                sx={{ minWidth: 300, height: 40 }}
                 SelectProps={{ native: true }}
                 InputLabelProps={{ shrink: true }}
-                sx={{
-                  height: 40,
-                }}
               >
-                <MenuItem value="Computador">Computador</MenuItem>
-                <MenuItem value="Herramienta">Herramienta</MenuItem>
-                <MenuItem value="Otro">Otro</MenuItem>
+                <MenuItem value="">Seleccione tipo equipo</MenuItem>
+                {Array.isArray(categoria) &&
+                  categoria.map((cat) => (
+                    <MenuItem key={cat.id_categoria} value={cat.id_categoria}>
+                      {cat.nombre_categoria}
+                    </MenuItem>
+                  ))}
               </Select>
 
             </FormControl>
@@ -279,7 +296,7 @@ function EquipoCreateModal({ onSave, oncancel }) {
         gap={1}
         mt={3}
       >
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
 

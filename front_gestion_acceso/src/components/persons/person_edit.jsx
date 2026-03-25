@@ -5,7 +5,7 @@ import MDInput from "@/components/MDInput";
 import { MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 import MDTypography from "@/components/MDTypography";
 
-export default function PersonEditModal({ oncancel, person, onSave }) {
+export default function PersonEditModal({ onCancel, person, onSave }) {
   const [form, setForm] = useState({ nombre_completo: "", tipo_persona:"", tipo_documento:"",
                                      documento: "" });
 
@@ -93,7 +93,7 @@ export default function PersonEditModal({ oncancel, person, onSave }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
         <MDButton color="info" type="submit" variant="gradient">

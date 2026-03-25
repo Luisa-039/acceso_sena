@@ -227,7 +227,7 @@ function Sedes() {
                 onSave={(data) => {
                   handleCreateSede(data);
                 }}
-                oncancel={() => setOpenCreate(false)}
+                onCancel={() => setOpenCreate(false)}
               />
             </MDBox>
           </Dialog>
@@ -235,7 +235,7 @@ function Sedes() {
           <MDBox p={3}>
             <SedeEditModal
               onSave={handleUpdateSede}
-              oncancel={() => { setSelectedSede(null) }}
+              onCancel={() => { setSelectedSede(null) }}
               sede={selectedSede} />
           </MDBox>
         </Dialog>

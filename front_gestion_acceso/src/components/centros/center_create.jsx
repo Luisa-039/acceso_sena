@@ -4,9 +4,8 @@ import MDBox from "@/components/MDBox";
 import MDButton from "@/components/MDButton";
 import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
-import MenuItem from "@mui/material/MenuItem";
 
-function CentroCreateModal({ onSave, oncancel }) {
+function CentroCreateModal({ onSave, onCancel }) {
 
   const [form, setForm] = useState({
     codigo_centro: "",
@@ -77,7 +76,7 @@ function CentroCreateModal({ onSave, oncancel }) {
           InputLabelProps={{ shrink: true }}
            sx={{ width: 200 }}
         >
-          <option value="">Seleccione el centro</option>
+          <option value="">Seleccione la ciudad</option>
           {Array.isArray(ciudades) &&
           ciudades.map((ciudad) => (
             <option key={ciudad.id_ciudad} value={ciudad.id_ciudad}>
@@ -88,7 +87,7 @@ function CentroCreateModal({ onSave, oncancel }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
 

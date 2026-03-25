@@ -5,7 +5,7 @@ import MDInput from "@/components/MDInput";
 import { apiFetch } from "@/services/api";
 import MDTypography from "@/components/MDTypography";
 
-export default function UserEditModal({ oncancel, user, onSave }) {
+export default function UserEditModal({ onCancel, user, onSave }) {
   const [form, setForm] = useState({ nombre_usuario: "", email: "", documento: "", telefono: "", sede_id: 0 });
 
 
@@ -114,7 +114,7 @@ export default function UserEditModal({ oncancel, user, onSave }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
         <MDButton color="info" type="submit" variant="gradient">

@@ -10,7 +10,7 @@ class CategorieCreate(CategorieBase):
     pass
 
 class CategorieUpdate(BaseModel):
-    nombre: Optional[str] = Field(default=None, min_length=3, max_length=30)
+    nombre_categoria: Optional[str] = Field(default=None, min_length=3, max_length=30)
     descripcion: Optional[str] = Field(default=None, min_length=3, max_length=100)
 
 class CategorieEstado(BaseModel):

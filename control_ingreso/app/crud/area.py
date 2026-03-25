@@ -45,8 +45,11 @@ def get_area_by_id(db: Session, id: int):
 
 def get_all_areas(db: Session):
     try:
-        query = text("""SELECT
-                     * FROM areas
+        query = text("""SELECT a.id_area, a.nombre_area, 
+                     a.sede_id, s.nombre AS nombre_sede,
+                     a.estado
+                     FROM areas a
+                     INNER JOIN sedes s ON a.sede_id = s.id_sede
                      """)
         result = db.execute(query).mappings().all()
         return result

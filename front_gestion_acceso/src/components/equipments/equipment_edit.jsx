@@ -1,24 +1,39 @@
 import { useEffect, useState } from "react";
 import MDBox from "@/components/MDBox";
-//import { apiFetch } from "@/services/api";
+import { apiFetch } from "@/services/api";
 import MDButton from "@/components/MDButton";
 import MDInput from "@/components/MDInput";
 import { MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 import MDTypography from "@/components/MDTypography";
 
-export default function PersonEditModal({ oncancel, equipement, onSave }) {
+
+export default function PersonEditModal({ onCancel, equipement, onSave }) {
   const [form, setForm] = useState({
-    persona_id: 0, tipo_equipo: "",
+    persona_id: 0, categoria_id: "",
     marca_modelo: "", codigo_barras_inv: "", serial: "", descripcion: ""
   });
 
   //const [propietario, setPropietario] = useState([]);
+  const [categoria, setCategoria] = useState([]);
+
+  useEffect(() => {
+    apiFetch("categoria/all/categories")
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCategoria(data);
+        }
+        else if (data.categoria) {
+          setCategoria(data.categoria);
+        }
+      })
+      .catch(err => console.error(err));
+  }, []);
 
   useEffect(() => {
     if (equipement) {
       setForm({
         persona_id: equipement.persona_id,
-        tipo_equipo: equipement.tipo_equipo,
+        categoria_id: equipement.categoria_id,
         marca_modelo: equipement.marca_modelo,
         codigo_barras_inv: equipement.codigo_barras_inv,
         serial: equipement.serial,
@@ -81,19 +96,25 @@ export default function PersonEditModal({ oncancel, equipement, onSave }) {
 
       <MDBox mb={2}>
         <FormControl size="md">
-          <InputLabel id="tipo-equipo-label">Tipo equipo</InputLabel>
+          <InputLabel id="categoria-label">Tipo equipo</InputLabel>
           <Select
-            labelId="tipo_equipo-label"
-            name="tipo_equipo"
-            value={form.tipo_equipo || ""}
-            label="Tipo equipo"
+            label="categoria-label"
+            name="categoria_id"
+            value={form.categoria_id}
             onChange={handleChange}
-            sx={{ height: 40, width: 255 }}
+            sx={{ minWidth: 255, height: 40 }}
+            SelectProps={{ native: true }}
+            InputLabelProps={{ shrink: true }}
           >
-            <MenuItem value="Computador">Computador</MenuItem>
-            <MenuItem value="Herramienta">Herramienta</MenuItem>
-            <MenuItem value="Otro">Otro</MenuItem>
+            <MenuItem value="">Seleccione tipo equipo</MenuItem>
+            {Array.isArray(categoria) &&
+              categoria.map((cat) => (
+                <MenuItem key={cat.id_categoria} value={cat.id_categoria}>
+                  {cat.nombre_categoria}
+                </MenuItem>
+              ))}
           </Select>
+
         </FormControl>
       </MDBox>
 
@@ -128,7 +149,7 @@ export default function PersonEditModal({ oncancel, equipement, onSave }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
         <MDButton color="info" type="submit" variant="gradient">

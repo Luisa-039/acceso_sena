@@ -8,7 +8,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import { MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 
-export default function MovementsEditModal({ oncancel, movements, onSave }) {
+export default function MovementsEditModal({ onCancel, movements, onSave }) {
 
   //validar si los datos los trae automáticamente
 
@@ -143,7 +143,7 @@ export default function MovementsEditModal({ oncancel, movements, onSave }) {
         </FormControl>
       </MDBox>
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
         <MDButton color="info" type="submit" variant="gradient">

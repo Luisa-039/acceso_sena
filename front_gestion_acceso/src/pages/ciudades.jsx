@@ -100,15 +100,15 @@ function Ciudades() {
 
     try {
       const response = await apiFetch(
-        `cities/ciudad-by-code/${selectedCiudad.codigo}`,
+        `cities/by-id/${selectedCiudad.id_ciudad}`,
         {
           method: "PUT",
           body: data,
         }
       );
       setCiudades(ciudad =>
-        ciudad.map(s =>
-          c.codigo === selectedCiudad.codigo
+        ciudad.map(c =>
+          c.id_ciudad === selectedCiudad.id_ciudad
             ? { ...c, ...data }
             : c
         )

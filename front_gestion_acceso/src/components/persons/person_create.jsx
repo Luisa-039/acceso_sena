@@ -6,7 +6,7 @@ import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
 import { MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 
-function PersonCreateModal({ onSave, oncancel }) {
+function PersonCreateModal({ onSave, onCancel }) {
 
   const [form, setForm] = useState({
     tipo_persona: "",
@@ -105,7 +105,7 @@ function PersonCreateModal({ onSave, oncancel }) {
 
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
 

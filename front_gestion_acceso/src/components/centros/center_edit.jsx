@@ -5,7 +5,7 @@ import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
 import { apiFetch } from "@/services/api";
 
-export default function CentroEditModal({ oncancel, centro, onSave }) {
+export default function CentroEditModal({ onCancel, centro, onSave }) {
   const [form, setForm] = useState({
     codigo_centro: "",
     nombre: "", estado: true
@@ -94,7 +94,7 @@ export default function CentroEditModal({ oncancel, centro, onSave }) {
       </MDBox>
 
       <MDBox display="flex" justifyContent="flex-end" gap={1}>
-        <MDButton onClick={oncancel} color="secondary" variant="text">
+        <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
         <MDButton color="info" type="submit" variant="gradient">

@@ -318,7 +318,7 @@ const getEstadoStyle = (estado) => ({
                 onSave={(data) => {
                   handleCreateEquipo(data);
                 }}
-                oncancel={() => setOpenCreate(false)}
+                onCancel={() => setOpenCreate(false)}
               />
             </MDBox>
           </Dialog>
@@ -326,7 +326,7 @@ const getEstadoStyle = (estado) => ({
           <MDBox p={3}>
             <EquipoEdit_sedeModal
               onSave={handleUpdateEquip_sede}
-              oncancel={() => { setSelectedEquips_sede(null) }}
+              onCancel={() => { setSelectedEquips_sede(null) }}
               equipement_sede={selectedEquips_sede}
               />
           </MDBox>

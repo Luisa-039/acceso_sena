@@ -239,7 +239,7 @@ function Users() {
                 onSave={(data) => {
                   handleCreateUser(data);
                 }}
-                oncancel={() => setOpenCreate(false)}
+                onCancel={() => setOpenCreate(false)}
               />
             </MDBox>
           </Dialog>
@@ -248,7 +248,7 @@ function Users() {
             <MDBox p={3}>
               <UserEditModal
                 onSave={handleUpdateUser}
-                oncancel={()=>{setSelectedUser(null)}}
+                onCancel={()=>{setSelectedUser(null)}}
                 user={selectedUser} />
             </MDBox>
           </Dialog>

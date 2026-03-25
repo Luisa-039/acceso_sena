@@ -272,7 +272,7 @@ function Equips_ext() {
                 onSave={(data) => {
                   handleCreateEquipo(data);
                 }}
-                oncancel={() => setOpenCreate(false)}
+                onCancel={() => setOpenCreate(false)}
               />
             </MDBox>
           </Dialog>
@@ -281,7 +281,7 @@ function Equips_ext() {
           <MDBox p={3}>
             <EquipoEditModal
               onSave={handleUpdateEquip}
-              oncancel={() => { setSelectedEquips_ext(null) }}
+              onCancel={() => { setSelectedEquips_ext(null) }}
               equipement={selectedEquips_ext} />
           </MDBox>
         </Dialog>

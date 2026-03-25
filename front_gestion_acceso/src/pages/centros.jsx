@@ -199,7 +199,7 @@ function Centros() {
                 onSave={(data) => {
                   handleCreateCentro(data);
                 }}
-                oncancel={() => setOpenCreate(false)}
+                onCancel={() => setOpenCreate(false)}
               />
             </MDBox>
           </Dialog>
@@ -207,7 +207,7 @@ function Centros() {
           <MDBox p={3}>
             <CentroEditModal
               onSave={handleUpdateCentro}
-              oncancel={() => { setSelectedCentro(null) }}
+              onCancel={() => { setSelectedCentro(null) }}
               centro={selectedCentro} />
           </MDBox>
         </Dialog>

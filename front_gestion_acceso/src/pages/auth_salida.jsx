@@ -269,7 +269,7 @@ function Auth_salida() {
               onSave={(data) => {
                 handleCreate_authSalida(data);
               }}
-              oncancel={() => setOpenCreate(false)}
+              onCancel={() => setOpenCreate(false)}
             />
           </MDBox>
         </Dialog>
@@ -277,7 +277,7 @@ function Auth_salida() {
           <MDBox p={3}>
             <Auth_salidaEditModal
               onSave={handleUpdadeAuth_salida}
-              oncancel={() => { setSelectedAuth_salida(null) }}
+              onCancel={() => { setSelectedAuth_salida(null) }}
               auth_salida={selectedAuth_salida}
             />
           </MDBox>
