@@ -23,7 +23,7 @@ function AccordionComponent({ items }) {
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <MDTypography variant="h7">{item.title}</MDTypography>
           </AccordionSummary>
-          <AccordionDetails>{item.content}</AccordionDetails>
+          <AccordionDetails sx={{alignItems: "center"}}>{item.content}</AccordionDetails>
         </Accordion>
       ))}
     </>

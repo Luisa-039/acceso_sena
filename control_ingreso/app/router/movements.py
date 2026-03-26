@@ -86,7 +86,7 @@ def movement_serial(
 @router.put("/by-id/{id_movimiento}")
 def update_movement_by_id(
     id_movimiento: int, 
-    movement: int, 
+    movement: MovementUpdate, 
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -95,7 +95,7 @@ def update_movement_by_id(
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        success = crud_movement.update_movement_by_id(db, id_movimiento, movement)
+        success = crud_movement.update_movement_by_id(db, id_movimiento, movement.tipo_id)
         if not success:
             raise HTTPException(status_code=400, detail="No se pudo actualizar el movimiento")
         return {"message": "Movimiento actualizado correctamente"}

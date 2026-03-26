@@ -19,6 +19,7 @@ import { MODULOS } from "@/constants/modulos";
 import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
 import Encuestas from "./pages/encuestas";
+import Consumibles from "@/pages/inv_conumibles";
 import AccordionPage from "@/pages/accordionPage";
 
 
@@ -158,19 +159,19 @@ const routes = [
     collapse: [
       {
         type: "collapse",
-        name: "Equipos sede",
-        key: "equipement_sede_group",
-        route: "equipement_sede",
-        idModulo: MODULOS.EQUIPOS_SEDE,
-        component: <Equipement_sede />,
-      },
-      {
-        type: "collapse",
         name: "Autorizaciones salidas",
         key: "auth_salida_group",
         route: "auth_salida",
         idModulo: MODULOS.AUTORIZACION_SALIDA,
         component: <Auth_salida />,
+      },
+      {
+        type: "collapse",
+        name: "Equipos sede",
+        key: "equipement_sede_group",
+        route: "equipement_sede",
+        idModulo: MODULOS.EQUIPOS_SEDE,
+        component: <Equipement_sede />,
       },
       {
         type: "collapse",
@@ -184,17 +185,17 @@ const routes = [
   },
   {
     type: "accordion",
-    name: "Gestión de centros",
+    name: "Gestión operativa",
     key: "centros-menu",
     icon: "group",
     collapse: [
       {
         type: "collapse",
-        name: "Sedes",
-        key: "sedes",
-        route: "sedes",
-        idModulo: MODULOS.SEDES,
-        component: <Sedes />,
+        name: "Áreas",
+        key: "areas_group",
+        route: "areas",
+        idModulo: MODULOS.AREAS,
+        component: <Areas />,
       },
       {
         type: "collapse",
@@ -206,14 +207,6 @@ const routes = [
       },
       {
         type: "collapse",
-        name: "Departamentos",
-        key: "departamentos_group",
-        route: "departamentos",
-        idModulo: MODULOS.DEPARTAMENTOS,
-        component: <Departamentos />,
-      },
-      {
-        type: "collapse",
         name: "Ciudades",
         key: "ciudades_group",
         route: "ciudades",
@@ -222,14 +215,30 @@ const routes = [
       },
       {
         type: "collapse",
-        name: "Áreas",
-        key: "areas_group",
-        route: "areas",
-        idModulo: MODULOS.AREAS,
-        component: <Areas />,
+        name: "Departamentos",
+        key: "departamentos_group",
+        route: "departamentos",
+        idModulo: MODULOS.DEPARTAMENTOS,
+        component: <Departamentos />,
       },
+      {
+        type: "collapse",
+        name: "Sedes",
+        key: "sedes",
+        route: "sedes",
+        idModulo: MODULOS.SEDES,
+        component: <Sedes />,
+      },      
     ]
-  }
+  },
+  {
+        type: "collapse",
+        name: "Inventario consumibles",
+        key: "consumibles",
+        route: "consumibles",
+        idModulo: MODULOS.INVENTARIO_CONSUMIBLES,
+        component: <Consumibles />,
+      },
 
 ];
 

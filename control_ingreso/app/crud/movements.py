@@ -1,29 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import Optional, List
 from sqlalchemy.exc import SQLAlchemyError
-from app.schemas.movements import MovementUpdate
 
 import logging
 
 logger = logging.getLogger(__name__)
-
-def update_movement_by_id(db: Session, id_movimiento: int, movement_update: MovementUpdate) -> bool:
-    try:
-        query = text("""
-            UPDATE movimientos_equipos_sede
-            SET tipo_id = :movimiento_eq
-            WHERE id_movimiento_sede = :id_movimiento_sede
-        """)
-        result = db.execute(query, {"movimiento_eq": movement_update.tipo_id, "id_movimiento_sede": id_movimiento})
-        db.commit()
-
-        return result.rowcount > 0
-
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error(f"Error al cambiar el movimiento del equipo {id_movimiento}: {e}")
-        raise Exception("Error de base de datos al cambiar el movimiento del equipo")
 
 def get_movement_serial(db:Session, serial: str):
     try:
@@ -60,14 +41,14 @@ def get_all_movements(db: Session):
         logger.error(f"Error al obtener el listado de movimientos: {e}")
         raise Exception("Error de base de datos al obtener el listado de movimientos")
     
-def update_movement_by_id(db: Session, id_movimiento: int, movement_update: MovementUpdate) -> bool:
+def update_movement_by_id(db: Session, id_movimiento: int, tipo_id: int) -> bool:
     try:
         query = text("""
             UPDATE movimientos_equipos_sede
             SET tipo_id = :movimiento_eq
             WHERE id_movimiento_sede = :id_movimiento_sede
         """)
-        result = db.execute(query, {"movimiento_eq": movement_update.tipo_id, "id_movimiento_sede": id_movimiento})
+        result = db.execute(query, {"movimiento_eq": tipo_id, "id_movimiento_sede": id_movimiento})
         db.commit()
 
         return result.rowcount > 0

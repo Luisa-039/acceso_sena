@@ -13,7 +13,7 @@ class MovementCreate(MovementBase):
     pass
 
 class MovementUpdate(BaseModel):
-    tipo_id: Optional[int] = None
+    tipo_id: int
 
 class MovementOut(MovementBase):
     id_movimiento_sede: int 

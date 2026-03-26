@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.router import users, auth, person, sede, center, equipments, equipments_sede, access, roles, autorizacion_salida, movements, permisos, department, type, modulo, categorie, area, cities, encuestas
+from app.router import users, auth, person, sede, center, equipments, equipments_sede, access, roles, autorizacion_salida, movements, permisos, department, type, modulo, categorie, area, cities, encuestas, inv_consumibles
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
@@ -32,6 +32,7 @@ app.include_router(categorie.router, prefix="/categoria", tags=["categorias"])
 app.include_router(area.router, prefix="/area", tags=["areas"])
 app.include_router(cities.router, prefix="/cities", tags=["cities"])
 app.include_router(encuestas.router, prefix="/encuestas", tags=["encuestas"])
+app.include_router(inv_consumibles.router, prefix="/inv_consumibles", tags=["inventario_consumibles"])
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 

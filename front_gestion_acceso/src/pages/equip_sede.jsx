@@ -191,24 +191,6 @@ const getEstadoStyle = (estado) => ({
       )
      },
     { header: "Código barras", accessorKey: "cod_eq" },
-    // {header: "Imagen", accessorKey: "foto_eq",
-    //   cell: (info) => {
-    //     const value = info.getValue();
-
-    //     if (!value) return "Sin imagen";
-
-    //     return (
-    //       <img
-    //         src={`http://localhost:8000/${value}`}
-    //         alt="equipo"
-    //         style={{
-    //           width: "50px",
-    //           borderRadius: "6px"
-    //         }}
-    //       />
-    //     );
-    //   }
-    // },
     { header: "Fecha registro", accessorKey: "fecha_registro" },
     {
       header: "Estado", accessorKey: "estado",

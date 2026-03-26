@@ -77,8 +77,9 @@ function movements() {
         return;
       }
 
-      await apiFetch(`movements/by-id/${movement.id_movimiento_sede}?movement=${idTipo}`, {
-        method: "PUT"
+      await apiFetch(`movements/by-id/${movement.id_movimiento_sede}`, {
+        method: "PUT",
+        body: { tipo_id: idTipo },
       });
 
       setMovements(prev =>
@@ -97,7 +98,7 @@ function movements() {
   const estadoStyles = {
     Entrada: "success.main",
     Traslado: "warning.main",
-    Salida: "error.main"
+    Salida: "error.main",
   };
 
   const getEstadoStyle = (estado) => ({
