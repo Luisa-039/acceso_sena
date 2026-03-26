@@ -24,9 +24,9 @@ function collapseItem(theme, ownerState) {
         ? dark.main
         : white.main,
     display: "flex",
-    alignItems: "center",
+    alignItems: "left",
     width: "100%",
-    padding: `${pxToRem(8)} ${pxToRem(10)}`,
+    padding: `${pxToRem(12)} ${pxToRem(16)}`,
     margin: `${pxToRem(1.5)} ${pxToRem(16)}`,
     borderRadius: borderRadius.md,
     cursor: "pointer",
@@ -98,12 +98,12 @@ function collapseText(theme, ownerState) {
   const { pxToRem } = functions;
 
   return {
-    marginLeft: pxToRem(10),
+    marginLeft: 0,
 
     [breakpoints.up("xl")]: {
       opacity: miniSidenav || (miniSidenav && transparentSidenav) ? 0 : 1,
       maxWidth: miniSidenav || (miniSidenav && transparentSidenav) ? 0 : "100%",
-      marginLeft: miniSidenav || (miniSidenav && transparentSidenav) ? 0 : pxToRem(10),
+      marginLeft: 0,
       transition: transitions.create(["opacity", "margin"], {
         easing: transitions.easing.easeInOut,
         duration: transitions.duration.standard,
@@ -111,9 +111,9 @@ function collapseText(theme, ownerState) {
     },
 
     "& span": {
-      fontWeight: active ? fontWeightRegular : fontWeightLight,
-      fontSize: size.sm,
-      lineHeight: 0,
+      fontWeight: active ? fontWeightRegular : fontWeightRegular,
+      fontSize: pxToRem(14),
+      lineHeight: 1.25,
     },
   };
 }
