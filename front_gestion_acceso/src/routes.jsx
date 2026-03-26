@@ -154,7 +154,7 @@ const routes = [
   },
   {
     type: "accordion",
-    name: "Gestión de equipos",
+    name: "Gestión de equipos sede",
     key: "accordion-menu",
     collapse: [
       {

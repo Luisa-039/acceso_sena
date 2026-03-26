@@ -8,7 +8,6 @@ import TableRow from "@mui/material/TableRow";
 
 import MDBox from "@/components/MDBox";
 import MDInput from "@/components/MDInput";
-import MDButton from "@/components/MDButton";
 import MDPagination from "@/components/MDPagination";
 
 import DataTableHeadCell from "@/examples/Tables/DataTable/DataTableHeadCell";
@@ -16,7 +15,7 @@ import DataTableBodyCell from "./DataTableBodyCell";
 import * as MuiIcons from "@mui/icons-material";
 
 
-function DataTable({ canSearch, table, pagination, noEndBorder, headerActions, onSearchChange
+function DataTable({ canSearch, table, pagination, noEndBorder, headerActions, searchActions, onSearchChange
 }) {
   const columns = useMemo(() => table.columns, [table.columns]);
   const data = useMemo(() => table.rows, [table.rows]);
@@ -52,41 +51,6 @@ function DataTable({ canSearch, table, pagination, noEndBorder, headerActions, o
     getSortedRowModel: getSortedRowModel(),
   });
 
-  //   const getPageNumbers = () => {
-  //   const totalPages = Math.ceil(
-  //     pagination.total / pagination.pageSize
-  //   );
-
-  //   const current = pagination.page + 1;
-
-  //   // Si solo hay 1 página
-  //   if (totalPages <= 1) return [1];
-
-  //   const pages = [];
-
-  //   // Siempre la primera
-  //   pages.push(1);
-
-  //   // Si la actual no es ni la primera ni la última
-  //   if (current !== 1 && current !== totalPages) {
-  //     if (current > 1) {
-  //       pages.push("...");
-  //     }
-
-  //     pages.push(current);
-
-  //     if (current < totalPages - 1) {
-  //       pages.push("...");
-  //     }
-  //   }
-
-  //   // Siempre la última (si es diferente de 1)
-  //   if (totalPages !== 1) {
-  //     pages.push(totalPages);
-  //   }
-
-  //   return pages;
-  // };
 
   const getPageNumbers = () => {
     const totalPages = Math.ceil(pagination.total / pagination.pageSize);
@@ -154,7 +118,8 @@ function DataTable({ canSearch, table, pagination, noEndBorder, headerActions, o
           )}
           
         </MDBox>
-        <MDBox>
+        <MDBox display="flex" alignItems="center" gap={1}>
+          {searchActions}
           {canSearch && (
             <MDInput
               placeholder="Buscar"
@@ -286,6 +251,7 @@ DataTable.propTypes = {
   pagination: PropTypes.object,
   isSorted: PropTypes.bool,
   noEndBorder: PropTypes.bool,
+  searchActions: PropTypes.node,
   onSearchChange: PropTypes.func,
 };
 

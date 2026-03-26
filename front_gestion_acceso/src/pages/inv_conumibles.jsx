@@ -13,6 +13,9 @@ import ConsumibleCreateModal from "@/components/consumibles/consumible_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils/exportUtils";
+import MDInput from "@/components/MDInput";
+import MenuItem from "@mui/material/MenuItem";
 
 function Inv_consumible() {
   const [Inv_consumible, setInv_consumible] = useState([]);
@@ -22,6 +25,7 @@ function Inv_consumible() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportFormat, setExportFormat] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.EQUIPOS_SEDE);
   const canInsert = isAdmin || permisos.insertar;
   const canUpdate = isAdmin || permisos.actualizar;
@@ -39,9 +43,9 @@ function Inv_consumible() {
     }
 
     const res = await apiFetch(`inv_consumibles/all_consumibles-pag?${params.toString()}`)
-      setInv_consumible(res.consumibles || []);
-      setTotal(res.total_consumibles || 0);
-    }
+    setInv_consumible(res.consumibles || []);
+    setTotal(res.total_consumibles || 0);
+  }
 
   useEffect(() => {
     fetchInv_consumibles();
@@ -74,16 +78,16 @@ function Inv_consumible() {
     }
   }
 
-    async function handleCreateConsumible(data) {
+  async function handleCreateConsumible(data) {
     if (!canInsert) return;
 
     try {
-        await apiFetch(`inv_consumibles/crear`, {
+      await apiFetch(`inv_consumibles/crear`, {
         method: "POST",
         body: data,
       });
 
-        await fetchInv_consumibles();
+      await fetchInv_consumibles();
       setOpenCreate(false);
       alert("Consumible creado con éxito");
     } catch (error) {
@@ -141,7 +145,7 @@ function Inv_consumible() {
     { header: "Tipo consumible", accessorKey: "c_consumible" },
     { header: "Placa", accessorKey: "placa_cons" },
     { header: "marca / modelo", accessorKey: "marca_modelo_con" },
-    { header: "Cantidad", accessorKey: "cantidad_cons"},
+    { header: "Cantidad", accessorKey: "cantidad_cons" },
     { header: "Porcentaje (%)", accessorKey: "porcentaje_toner" },
     { header: "Fecha registro", accessorKey: "fecha_registro" },
     {
@@ -168,21 +172,21 @@ function Inv_consumible() {
     },
     ...(canUpdate
       ? [
-          {
-            id: "acciones",
-            header: "Acciones",
-            cell: ({ row }) => (
-              <MDButton
-                variant="text"
-                size="small"
-                sx={getEditButtonStyle}
-                onClick={() => setSelectedInv_consumible(row.original.consumibles)}
-              >
-                Editar
-              </MDButton>
-            ),
-          },
-        ]
+        {
+          id: "acciones",
+          header: "Acciones",
+          cell: ({ row }) => (
+            <MDButton
+              variant="text"
+              size="small"
+              sx={getEditButtonStyle}
+              onClick={() => setSelectedInv_consumible(row.original.consumibles)}
+            >
+              Editar
+            </MDButton>
+          ),
+        },
+      ]
       : [])
   ];
 
@@ -212,6 +216,56 @@ function Inv_consumible() {
     consumibles
   }));
 
+  const exportColumns = [
+    { header: "Sede", key: "nombre_sede" },
+    { header: "Ubicación", key: "ubicacion" },
+    { header: "Tipo consumible", key: "nombre_categoria" },
+    { header: "Placa", key: "placa" },
+    {
+      header: "Marca / Modelo",
+      key: (row) => `${row.marca || ""} / ${row.modelo || ""}`.trim(),
+    },
+    { header: "Cantidad", key: "cantidad" },
+    { header: "Porcentaje (%)", key: "porcentaje_toner" },
+    { header: "Estado", key: "estado" },
+    { header: "Fecha registro", key: "fecha_registro", format: formatDateTime },
+  ];
+
+  const handleExport = (format) => {
+    const dateTag = new Date().toISOString().slice(0, 10);
+
+    if (!Inv_consumible.length) {
+      alert("No hay datos para exportar");
+      return;
+    }
+
+    try {
+      if (format === "csv") {
+        exportToCSV(Inv_consumible, exportColumns, `consumibles_${dateTag}.csv`);
+        return;
+      }
+
+      if (format === "excel") {
+        exportToExcel(Inv_consumible, exportColumns, `consumibles_${dateTag}.xlsx`);
+        return;
+      }
+
+      exportToPDF(Inv_consumible, exportColumns, `consumibles_${dateTag}.pdf`, "Reporte de Consumibles");
+    } catch (error) {
+      console.error("Error exportando consumibles:", error);
+      alert("No se pudo generar el archivo de exportación");
+    }
+  };
+
+  const handleExportSelect = (event) => {
+    const format = event.target.value;
+    setExportFormat(format);
+    if (format) {
+      handleExport(format);
+      setExportFormat("");
+    }
+  };
+
   return (
     <MDBox>
       <DashboardNavbar />
@@ -219,7 +273,7 @@ function Inv_consumible() {
         <Card>
           <MDBox p={3}>
             <MDTypography variant="h3">Consumibles</MDTypography>
-            <DataTable 
+            <DataTable
               table={{ columns, rows }}
               canSearch
               onSearchChange={handleSearchConsumibles}
@@ -229,6 +283,53 @@ function Inv_consumible() {
                     Registrar consumible
                   </MDButton>
                 ) : null
+              }
+              searchActions={
+                <MDInput
+                  select
+                  value={exportFormat}
+                  onChange={handleExportSelect}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => (selected ? String(selected).toUpperCase() : "Exportar"),
+                    MenuProps: {
+                      PaperProps: {
+                        sx: {
+                          borderRadius: 2,
+                          mt: 1,
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    maxWidth: 220,
+                    "& .MuiInputBase-root": {
+                      height: 40,
+                      borderRadius: "10px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      backgroundColor: "#ffffff",
+                      color: "#002f87",
+                      "&:hover": {
+                        backgroundColor: "#00347b",
+                        "& .MuiSelect-select": {
+                      color: "#ffffff"}
+                      },
+                    },
+                    "& .MuiSelect-select": {
+                      color: "#071d89",
+                      pr: 4,
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ffffff",
+                    }
+                  }}
+                >
+                  <MenuItem  value="csv">CSV</MenuItem>
+                  <MenuItem  value="excel">Excel</MenuItem>
+                  <MenuItem  value="pdf">PDF</MenuItem>
+                </MDInput>
               }
 
               pagination={{
@@ -241,22 +342,22 @@ function Inv_consumible() {
           </MDBox>
         </Card>
         <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
-            <MDBox p={3}>
-              <ConsumibleCreateModal
-                onSave={(data) => {
-                  handleCreateConsumible(data);
-                }}
-                onCancel={() => setOpenCreate(false)}
-              />
-            </MDBox>
-          </Dialog>
+          <MDBox p={3}>
+            <ConsumibleCreateModal
+              onSave={(data) => {
+                handleCreateConsumible(data);
+              }}
+              onCancel={() => setOpenCreate(false)}
+            />
+          </MDBox>
+        </Dialog>
         <Dialog open={Boolean(selectedInv_consumible) && canUpdate} onClose={() => setSelectedInv_consumible(null)}>
           <MDBox p={3}>
             <ConsumibleEditModal
               onSave={handleUpdateConsumible}
               onCancel={() => { setSelectedInv_consumible(null) }}
               consumible={selectedInv_consumible}
-              />
+            />
           </MDBox>
         </Dialog>
       </MDBox>

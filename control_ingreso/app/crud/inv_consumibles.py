@@ -134,4 +134,52 @@ def get_all_consumible_pag(db: Session, skip:int = 0, limit = 10):
         logger.error(f"Error al obtener los consumibles: {e}", exc_info=True)
         raise Exception("Error de base de datos al obtener los consumibles")
 
+
+def get_dashboard_consumibles_summary(db: Session, sede_id: int):
+    """
+    Retorna un resumen para dashboard filtrado por sede:
+    - total de consumibles
+    - activos / inactivos
+    - cantidades agrupadas por categoria
+    """
+    try:
+        totales_query = text("""
+            SELECT
+                COUNT(*) AS total,
+                COALESCE(SUM(CASE WHEN estado = true THEN 1 ELSE 0 END), 0) AS activos,
+                COALESCE(SUM(CASE WHEN estado = false THEN 1 ELSE 0 END), 0) AS inactivos
+            FROM inv_consumibles
+            WHERE sede_id = :sede_id
+        """)
+        totales = db.execute(totales_query, {"sede_id": sede_id}).mappings().first()
+
+        categorias_query = text("""
+            SELECT
+                c.nombre_categoria AS categoria,
+                COALESCE(SUM(ic.cantidad), 0) AS cantidad
+            FROM categorias c
+            LEFT JOIN inv_consumibles ic
+                ON ic.categoria_id = c.id_categoria
+                AND ic.sede_id = :sede_id
+            GROUP BY c.id_categoria, c.nombre_categoria
+            ORDER BY c.nombre_categoria ASC
+        """)
+        categorias = db.execute(categorias_query, {"sede_id": sede_id}).mappings().all()
+
+        return {
+            "total": int((totales or {}).get("total", 0) or 0),
+            "activos": int((totales or {}).get("activos", 0) or 0),
+            "inactivos": int((totales or {}).get("inactivos", 0) or 0),
+            "por_categoria": [
+                {
+                    "categoria": item["categoria"],
+                    "cantidad": int(item["cantidad"] or 0),
+                }
+                for item in categorias
+            ],
+        }
+    except SQLAlchemyError as e:
+        logger.error(f"Error al obtener resumen dashboard de consumibles: {e}", exc_info=True)
+        raise Exception("Error de base de datos al obtener resumen de consumibles")
+
  

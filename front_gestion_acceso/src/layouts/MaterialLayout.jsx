@@ -83,7 +83,9 @@ export default function MaterialLayout() {
       <MDBox
         sx={({ breakpoints, transitions }) => ({
           p: 3,
-          position: "fixed",
+          position: "relative",
+          minHeight: "auto",
+          overflowY: "auto",
 
           [breakpoints.up("xl")]: {
             marginLeft: miniSidenav ? "120px" : "274px",

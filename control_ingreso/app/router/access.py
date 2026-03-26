@@ -234,3 +234,43 @@ def get_access_pag(
     )
 
 
+@router.get("/dashboard-daily-entries")
+def get_dashboard_daily_entries(
+    days: int = Query(14, ge=1, le=60),
+    month: int | None = Query(None, ge=1, le=12),
+    year: int | None = Query(None, ge=2000, le=2100),
+    db: Session = Depends(get_db),
+    user_token: UserOut = Depends(get_current_user)
+):
+    try:
+        id_rol = user_token.rol_id
+        if not verify_permissions(db, id_rol, modulo, "seleccionar"):
+            raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
+        if (month is None) != (year is None):
+            raise HTTPException(
+                status_code=422,
+                detail="Debe enviar month y year juntos para filtrar por mes",
+            )
+
+        data = crud_access.get_dashboard_daily_entries(
+            db=db,
+            sede_id=user_token.sede_id,
+            days=days,
+            month=month,
+            year=year,
+        )
+
+        return {
+            "sede_id": user_token.sede_id,
+            "days": days,
+            "month": month,
+            "year": year,
+            "entries": data,
+        }
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+

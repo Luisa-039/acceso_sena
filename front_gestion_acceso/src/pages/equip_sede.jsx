@@ -14,6 +14,7 @@ import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
 import { usePermissions } from "@/hooks/usePermissions";
+import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils/exportUtils";
 import { MODULOS } from "@/constants/modulos";
 
 function Equips_sede() {
@@ -22,6 +23,7 @@ function Equips_sede() {
   const [page, setPage] = useState(0);
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
+  const [exportFormat, setExportFormat] = useState("");
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.EQUIPOS_SEDE);
@@ -41,9 +43,9 @@ function Equips_sede() {
     }
 
     const res = await apiFetch(`equipments_sede/all_equips-pag?${params.toString()}`)
-      setEquips_sede(res.equipos || []);
-      setTotal(res.total_equipements || 0);
-    }
+    setEquips_sede(res.equipos || []);
+    setTotal(res.total_equipements || 0);
+  }
 
   const estadosEquipo = [
     { value: "Disponible", label: "DISPONIBLE" },
@@ -83,35 +85,35 @@ function Equips_sede() {
     }
   }
 
-const estadoStyles = {
-  Disponible: "success.main",
-  Mantenimiento: "warning.main",
-  Fuera_de_sede: "info.main",
-  Inactivo: "error.main"
-};
+  const estadoStyles = {
+    Disponible: "success.main",
+    Mantenimiento: "warning.main",
+    Fuera_de_sede: "info.main",
+    Inactivo: "error.main"
+  };
 
-const getEstadoStyle = (estado) => ({
-  minWidth: "120px",
-  
-  "& .MuiInputBase-root": {
-    borderRadius: "18px",
-    color: estadoStyles[estado],
-    fontWeight: 600,
-  },
+  const getEstadoStyle = (estado) => ({
+    minWidth: "120px",
 
-  "& .MuiOutlinedInput-notchedOutline": {
-    border: "none",
-  },
+    "& .MuiInputBase-root": {
+      borderRadius: "18px",
+      color: estadoStyles[estado],
+      fontWeight: 600,
+    },
 
-  "& .MuiSelect-select": {
-    color: estadoStyles[estado],
-  },
+    "& .MuiOutlinedInput-notchedOutline": {
+      border: "none",
+    },
 
-  "&:hover .MuiSelect-select": {
-    backgroundColor: estadoStyles[estado],
-    color: "#fff",
-  }
-});
+    "& .MuiSelect-select": {
+      color: estadoStyles[estado],
+    },
+
+    "&:hover .MuiSelect-select": {
+      backgroundColor: estadoStyles[estado],
+      color: "#fff",
+    }
+  });
 
   async function handleCreateEquipo(data) {
     if (!canInsert) return;
@@ -126,8 +128,8 @@ const getEstadoStyle = (estado) => ({
       alert("Equipo creado con éxito");
 
     } catch (error) {
-        alert("Error al crear el equipo");
-      }
+      alert("Error al crear el equipo");
+    }
   }
 
   //Función para actualizar equipo
@@ -179,9 +181,10 @@ const getEstadoStyle = (estado) => ({
     { header: "Tipo equipo", accessorKey: "c_equipo" },
     { header: "N. serial", accessorKey: "serie_eq" },
     { header: "marca / modelo", accessorKey: "marca_modelo_eq" },
-    { header: "descripcion", accessorKey: "descrip_eq",
+    {
+      header: "descripcion", accessorKey: "descrip_eq",
       cell: (info) => (
-        <div style={{ 
+        <div style={{
           whiteSpace: "normal",
           wordBreak: "break-word",
           maxWidth: "200px"
@@ -189,7 +192,7 @@ const getEstadoStyle = (estado) => ({
           {info.getValue()}
         </div>
       )
-     },
+    },
     { header: "Código barras", accessorKey: "cod_eq" },
     { header: "Fecha registro", accessorKey: "fecha_registro" },
     {
@@ -208,9 +211,9 @@ const getEstadoStyle = (estado) => ({
             value={value || ""}
             size="small"
             onChange={(e) => handleToggleEstado(equipo, e.target.value)}
-            sx={ getEstadoStyle(equipo.estado)}
+            sx={getEstadoStyle(equipo.estado)}
           >
-            {estadosEquipo.map((estado)=>(
+            {estadosEquipo.map((estado) => (
               <MenuItem key={estado.value} value={estado.value}>
                 {estado.label}
               </MenuItem>
@@ -221,21 +224,21 @@ const getEstadoStyle = (estado) => ({
     },
     ...(canUpdate
       ? [
-          {
-            id: "acciones",
-            header: "Acciones",
-            cell: ({ row }) => (
-              <MDButton
-                variant="text"
-                size="small"
-                sx={getEditButtonStyle}
-                onClick={() => setSelectedEquips_sede(row.original.equipement_sede)}
-              >
-                Editar
-              </MDButton>
-            ),
-          },
-        ]
+        {
+          id: "acciones",
+          header: "Acciones",
+          cell: ({ row }) => (
+            <MDButton
+              variant="text"
+              size="small"
+              sx={getEditButtonStyle}
+              onClick={() => setSelectedEquips_sede(row.original.equipement_sede)}
+            >
+              Editar
+            </MDButton>
+          ),
+        },
+      ]
       : [])
   ];
 
@@ -266,6 +269,55 @@ const getEstadoStyle = (estado) => ({
     equipement_sede
   }));
 
+  const exportColumns = [
+    { header: "Sede", key: "nombre_sede" },
+    { header: "Ubicación", key: "nombre_area" },
+    { header: "Tipo equipo", key: "nombre_categoria" },
+    { header: "N. serial", key: "serial" },
+    {
+      header: "Marca / modelo",
+      key: (row) => `${row.marca || ""} / ${row.modelo || ""}`.trim(),
+    },
+    { header: "Descripción", key: "descripcion" },
+    { header: "Estado", key: "estado" },
+    { header: "Fecha registro", key: "fecha_registro", format: formatDateTime },
+  ];
+
+  const handleExport = (format) => {
+    const dateTag = new Date().toISOString().slice(0, 10);
+
+    if (!Equips_sede.length) {
+      alert("No hay datos para exportar");
+      return;
+    }
+
+    try {
+      if (format === "csv") {
+        exportToCSV(Equips_sede, exportColumns, `Equipos_sede_${dateTag}.csv`);
+        return;
+      }
+
+      if (format === "excel") {
+        exportToExcel(Equips_sede, exportColumns, `Equipos_sede_${dateTag}.xlsx`);
+        return;
+      }
+
+      exportToPDF(Equips_sede, exportColumns, `Equipos_sede_${dateTag}.pdf`, "Reporte de equipos sede");
+    } catch (error) {
+      console.error("Error exportando equipos:", error);
+      alert("No se pudo generar el archivo de exportación");
+    }
+  };
+
+  const handleExportSelect = (event) => {
+    const format = event.target.value;
+    setExportFormat(format);
+    if (format) {
+      handleExport(format);
+      setExportFormat("");
+    }
+  };
+
   return (
     <MDBox>
       <DashboardNavbar />
@@ -273,7 +325,7 @@ const getEstadoStyle = (estado) => ({
         <Card>
           <MDBox p={3}>
             <MDTypography variant="h3">Equipos sede</MDTypography>
-            <DataTable 
+            <DataTable
               table={{ columns, rows }}
               canSearch
               onSearchChange={handleSearchEquipsSede}
@@ -283,6 +335,54 @@ const getEstadoStyle = (estado) => ({
                     Registrar equipo
                   </MDButton>
                 ) : null
+              }
+              searchActions={
+                <MDInput
+                  select
+                  value={exportFormat}
+                  onChange={handleExportSelect}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => (selected ? String(selected).toUpperCase() : "Exportar"),
+                    MenuProps: {
+                      PaperProps: {
+                        sx: {
+                          borderRadius: 2,
+                          mt: 1,
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    maxWidth: 220,
+                    "& .MuiInputBase-root": {
+                      height: 40,
+                      borderRadius: "10px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      backgroundColor: "#ffffff",
+                      color: "#002f87",
+                      "&:hover": {
+                        backgroundColor: "#00347b",
+                        "& .MuiSelect-select": {
+                          color: "#ffffff"
+                        }
+                      },
+                    },
+                    "& .MuiSelect-select": {
+                      color: "#071d89",
+                      pr: 4,
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ffffff",
+                    }
+                  }}
+                >
+                  <MenuItem value="csv">CSV</MenuItem>
+                  <MenuItem value="excel">Excel</MenuItem>
+                  <MenuItem value="pdf">PDF</MenuItem>
+                </MDInput>
               }
 
               pagination={{
@@ -295,27 +395,29 @@ const getEstadoStyle = (estado) => ({
           </MDBox>
         </Card>
         <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
-            <MDBox p={3}>
-              <Equipo_sedeCreateModal
-                onSave={(data) => {
-                  handleCreateEquipo(data);
-                }}
-                onCancel={() => setOpenCreate(false)}
-              />
-            </MDBox>
-          </Dialog>
+          <MDBox p={3}>
+            <Equipo_sedeCreateModal
+              onSave={(data) => {
+                handleCreateEquipo(data);
+              }}
+              onCancel={() => setOpenCreate(false)}
+            />
+          </MDBox>
+        </Dialog>
         <Dialog open={Boolean(selectedEquips_sede) && canUpdate} onClose={() => setSelectedEquips_sede(null)}>
           <MDBox p={3}>
             <EquipoEdit_sedeModal
               onSave={handleUpdateEquip_sede}
               onCancel={() => { setSelectedEquips_sede(null) }}
               equipement_sede={selectedEquips_sede}
-              />
+            />
           </MDBox>
         </Dialog>
       </MDBox>
     </MDBox>
   );
 }
+
+
 
 export default Equips_sede;

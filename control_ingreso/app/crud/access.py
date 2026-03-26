@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException
 import logging
 import re
+from datetime import date, timedelta
 
 from app.schemas.access import AccessCreate, PaginatedAccess
 
@@ -445,5 +446,73 @@ def get_all_access_pag(db: Session, skip:int = 0, limit = 10):
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener las autorizaciones de salida: {e}", exc_info=True)
         raise Exception("Error de base de datos al obtener las autorizaciones de salida")
+
+
+def get_dashboard_daily_entries(
+    db: Session,
+    sede_id: int,
+    days: int = 14,
+    month: int | None = None,
+    year: int | None = None,
+):
+    """
+    Retorna el numero de ingresos por dia para una sede.
+    Usa COUNT DISTINCT de persona para evitar duplicados por usuario en el mismo dia.
+    """
+    try:
+        if month is not None and year is not None:
+            if month == 12:
+                fecha_desde = date(year, month, 1)
+                fecha_hasta = date(year + 1, 1, 1)
+            else:
+                fecha_desde = date(year, month, 1)
+                fecha_hasta = date(year, month + 1, 1)
+
+            query = text("""
+                SELECT
+                    DATE(ra.fecha_entrada) AS fecha,
+                    COUNT(DISTINCT ra.persona_id) AS total_ingresos
+                FROM registro_accesos ra
+                WHERE ra.sede_id = :sede_id
+                  AND ra.fecha_entrada >= :fecha_desde
+                  AND ra.fecha_entrada < :fecha_hasta
+                GROUP BY DATE(ra.fecha_entrada)
+                ORDER BY DATE(ra.fecha_entrada) ASC
+            """)
+            rows = db.execute(
+                query,
+                {
+                    "sede_id": sede_id,
+                    "fecha_desde": fecha_desde,
+                    "fecha_hasta": fecha_hasta,
+                },
+            ).mappings().all()
+        else:
+            fecha_desde = date.today() - timedelta(days=days)
+            query = text("""
+                SELECT
+                    DATE(ra.fecha_entrada) AS fecha,
+                    COUNT(DISTINCT ra.persona_id) AS total_ingresos
+                FROM registro_accesos ra
+                WHERE ra.sede_id = :sede_id
+                  AND ra.fecha_entrada >= :fecha_desde
+                GROUP BY DATE(ra.fecha_entrada)
+                ORDER BY DATE(ra.fecha_entrada) ASC
+            """)
+            rows = db.execute(
+                query,
+                {"sede_id": sede_id, "fecha_desde": fecha_desde},
+            ).mappings().all()
+
+        return [
+            {
+                "fecha": row["fecha"].isoformat() if row["fecha"] else None,
+                "total_ingresos": int(row["total_ingresos"] or 0),
+            }
+            for row in rows
+        ]
+    except SQLAlchemyError as e:
+        logger.error(f"Error al obtener ingresos diarios para dashboard: {e}", exc_info=True)
+        raise Exception("Error de base de datos al obtener ingresos diarios")
 
 

@@ -126,3 +126,23 @@ def get_consumibles_pag(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/dashboard-summary")
+def get_dashboard_consumibles_summary(
+    db: Session = Depends(get_db),
+    user_token: UserOut = Depends(get_current_user)
+):
+    try:
+        id_rol = user_token.rol_id
+        if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
+            raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
+        data = crud_inv_consumibles.get_dashboard_consumibles_summary(db, user_token.sede_id)
+        return {
+            "sede_id": user_token.sede_id,
+            "sede_nombre": user_token.nombre,
+            **data,
+        }
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
