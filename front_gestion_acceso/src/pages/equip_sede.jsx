@@ -16,6 +16,7 @@ import MenuItem from "@mui/material/MenuItem";
 import { usePermissions } from "@/hooks/usePermissions";
 import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils/exportUtils";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 function Equips_sede() {
   const [Equips_sede, setEquips_sede] = useState([]);
@@ -81,7 +82,7 @@ function Equips_sede() {
       );
       fetchEquips_sedes();
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -125,10 +126,10 @@ function Equips_sede() {
       });
       fetchEquips_sedes();
       setOpenCreate(false);
-      alert("Equipo creado con éxito");
+      alerts.success("Equipo creado con éxito");
 
     } catch (error) {
-      alert("Error al crear el equipo");
+      alerts.error("Error al crear el equipo");
     }
   }
 
@@ -154,13 +155,13 @@ function Equips_sede() {
 
       if (response) {
         fetchEquips_sedes();
-        alert("Equipo actualizado con exito")
+        alerts.success("Equipo actualizado con exito");
         setSelectedEquips_sede(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar el equipo");
+      alerts.error("Error al actualizar el equipo");
     }
   }
 
@@ -287,7 +288,7 @@ function Equips_sede() {
     const dateTag = new Date().toISOString().slice(0, 10);
 
     if (!Equips_sede.length) {
-      alert("No hay datos para exportar");
+      alerts.warning("No hay datos para exportar");
       return;
     }
 
@@ -305,7 +306,7 @@ function Equips_sede() {
       exportToPDF(Equips_sede, exportColumns, `Equipos_sede_${dateTag}.pdf`, "Reporte de equipos sede");
     } catch (error) {
       console.error("Error exportando equipos:", error);
-      alert("No se pudo generar el archivo de exportación");
+      alerts.error("No se pudo generar el archivo de exportación");
     }
   };
 

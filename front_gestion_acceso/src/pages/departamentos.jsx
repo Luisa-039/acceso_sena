@@ -12,6 +12,7 @@ import DepartmentCreateModal from "@/components/departamentos/department_create"
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function departamentos() {
@@ -54,7 +55,7 @@ function departamentos() {
     if (!canInsert) return;
 
     try {
-      await apiFetch(`department/crear`, {
+      await apiFetch(`deparment/crear`, {
         method: "POST",
         body: data,
       });
@@ -62,13 +63,13 @@ function departamentos() {
       setOpenCreate(false);
       fetchDepartamentos();
 
-      alert("Departamento creado con éxito");
+      alerts.success("Departamento creado con éxito");
 
     } catch (error) {
       if (error.detail === "Este departamento ya existe") {
-        alert("Este departamento ya existe");
+        alerts.warning("Este departamento ya existe");
       } else {
-        alert("Error al crear el departamento");
+        alerts.error("Error al crear el departamento");
       }
     }
   }

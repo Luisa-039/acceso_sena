@@ -13,6 +13,7 @@ import UserCreateModal from "@/components/users/user_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function Users() {
@@ -72,7 +73,7 @@ function Users() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -97,14 +98,14 @@ function Users() {
     );
 
     if (response) {
-      alert("Usuario actualizado con exito")
+      alerts.success("Usuario actualizado con exito");
       setSelectedUser(null);
       await fetchUsers();
     }
 
   } catch (error) {
     console.error(error)
-    alert("Error al actualizar usuario");
+    alerts.error("Error al actualizar usuario");
   }
   }
 
@@ -120,15 +121,15 @@ function Users() {
         setOpenCreate(false);
         fetchUsers();
 
-        alert("Usuario creado con éxito");
+        alerts.success("Usuario creado con éxito");
 
         setOpenCreate(false);
 
     } catch (error) {
           if (error.status === 400) {
-              alert("Este correo ya está registrado con otro usuario");
+              alerts.warning("Este correo ya está registrado con otro usuario");
           } else {
-              alert("Error al crear el usuario");
+              alerts.error("Error al crear el usuario");
           }
       }
     }

@@ -16,6 +16,7 @@ import { MODULOS } from "@/constants/modulos";
 import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils/exportUtils";
 import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
+import { alerts } from "@/hooks/alerts";
 
 function Inv_consumible() {
   const [Inv_consumible, setInv_consumible] = useState([]);
@@ -74,7 +75,7 @@ function Inv_consumible() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -89,10 +90,10 @@ function Inv_consumible() {
 
       await fetchInv_consumibles();
       setOpenCreate(false);
-      alert("Consumible creado con éxito");
+      alerts.success("Consumible creado con éxito");
     } catch (error) {
       if (error.status === 401) {
-        alert("Error al crear el Consumible");
+        alerts.error("Error al crear el Consumible");
       }
     }
   }
@@ -118,13 +119,13 @@ function Inv_consumible() {
       );
 
       if (response) {
-        alert("Consumible actualizado con exito")
+        alerts.success("Consumible actualizado con exito");
         setSelectedInv_consumible(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar el consumible");
+      alerts.error("Error al actualizar el consumible");
     }
   }
 
@@ -235,7 +236,7 @@ function Inv_consumible() {
     const dateTag = new Date().toISOString().slice(0, 10);
 
     if (!Inv_consumible.length) {
-      alert("No hay datos para exportar");
+      alerts.warning("No hay datos para exportar");
       return;
     }
 
@@ -253,7 +254,7 @@ function Inv_consumible() {
       exportToPDF(Inv_consumible, exportColumns, `consumibles_${dateTag}.pdf`, "Reporte de Consumibles");
     } catch (error) {
       console.error("Error exportando consumibles:", error);
-      alert("No se pudo generar el archivo de exportación");
+      alerts.error("No se pudo generar el archivo de exportación");
     }
   };
 

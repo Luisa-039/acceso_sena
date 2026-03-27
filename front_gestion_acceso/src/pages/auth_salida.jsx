@@ -13,6 +13,7 @@ import Auth_salidaCreateModal from "@/components/auth_salida/auth_salida_create"
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function Auth_salida() {
@@ -70,8 +71,9 @@ function Auth_salida() {
   //fución para cambiar el estado
   async function handleToggleEstado(auth_salida) {
     if (!canChangeState) return;
+    if (auth_salida.estado) return;
 
-    const nuevoEstado = !auth_salida.estado;
+    const nuevoEstado = true;
     const now = new Date();
     const fecha_actual =
         now.getFullYear() + "-" +
@@ -98,7 +100,7 @@ function Auth_salida() {
       );
       fetchAuth_salida();
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
   
@@ -113,10 +115,10 @@ function Auth_salida() {
       });
       fetchAuth_salida();
       setOpenCreate(false);
-      alert("Autorización de salida creado con éxito");
+      alerts.success("Autorización de salida creado con éxito");
 
     } catch (error) {
-      alert("Error al crear la autorización de salida");
+      alerts.error(error?.detail || "Error al crear la autorización de salida");
     }
   }
 
@@ -142,13 +144,13 @@ function Auth_salida() {
 
       if (response) {
         fetchAuth_salida();
-        alert("Equipo actualizado con exito")
+        alerts.success("Equipo actualizado con exito");
         setSelectedAuth_salida(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar el equipo");
+      alerts.error("Error al actualizar el equipo");
     }
   }
 
@@ -168,8 +170,7 @@ function Auth_salida() {
     { header: "Tipo equipo", accessorKey: "t_equipo" },
     { header: "N. serie", accessorKey: "serie_eq" },
     { header: "Destino", accessorKey: "destino_eq" },
-    {
-      header: "Motivo", accessorKey: "motivo_salida",
+    { header: "Motivo", accessorKey: "motivo_salida",
       cell: (info) => (
         <div style={{
           whiteSpace: "normal",
@@ -195,8 +196,21 @@ function Auth_salida() {
           <MDButton
             variant="text"
             size="small"
+            disabled={value}
             onClick={() => handleToggleEstado(auth_salida)}
-            sx={getEditButtonStyle(value)}
+            sx={{
+              ...getEditButtonStyle(value),
+              ...(value
+                ? {
+                    opacity: 0.7,
+                    cursor: "not-allowed",
+                    "&:hover": {
+                      backgroundColor: "transparent",
+                      color: "success.main",
+                    },
+                  }
+                : {}),
+            }}
           >
             {value ? "Autorizado" : "Pendiente"}
           </MDButton>
@@ -230,7 +244,7 @@ function Auth_salida() {
     serie_eq: auth_salida.serial,
     destino_eq: auth_salida.destino,
     motivo_salida: auth_salida.motivo,
-    estado: auth_salida.estado,
+    estado: (auth_salida.estado),
     fecha_autorizacion: formatearFecha(auth_salida.fecha_autorizacion),
     auth_salida
   }));

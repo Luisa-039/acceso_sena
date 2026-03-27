@@ -36,7 +36,7 @@ function getErrorMessage(err) {
 }
 
 function DashboardPage() {
-  const { user } = useAuth();
+  const { user, idRol } = useAuth();
   const now = new Date();
   const consumiblesChartRef = useRef(null);
   const ingresosChartRef = useRef(null);
@@ -46,6 +46,8 @@ function DashboardPage() {
   const [printPayload, setPrintPayload] = useState({ title: "", image: "", details: "" });
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [sedes, setSedes] = useState([]);
+  const [selectedSedeId, setSelectedSedeId] = useState(null);
   const [consumiblesSummary, setConsumiblesSummary] = useState({
     total: 0,
     activos: 0,
@@ -74,6 +76,65 @@ function DashboardPage() {
     return [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
   }, [now]);
 
+  const canSelectSede = useMemo(() => [1, 2].includes(Number(idRol)), [idRol]);
+
+  useEffect(() => {
+    if (!canSelectSede) {
+      setSedes([]);
+      setSelectedSedeId(user?.sede_id || null);
+      return;
+    }
+
+    let isMounted = true;
+    async function loadSedes() {
+      try {
+        const data = await apiFetch("sede/all/sedes");
+        if (!isMounted) return;
+
+        const sedesList = Array.isArray(data) ? data : data?.sedes || [];
+        setSedes(sedesList);
+
+        const defaultSede = user?.sede_id || sedesList[0]?.id_sede || null;
+        setSelectedSedeId(defaultSede);
+      } catch {
+        if (!isMounted) return;
+        setSedes([]);
+        setSelectedSedeId(user?.sede_id || null);
+      }
+    }
+
+    loadSedes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [canSelectSede, user?.sede_id]);
+
+  const effectiveSedeId = canSelectSede ? selectedSedeId : user?.sede_id;
+  const selectedSedeName = useMemo(() => {
+    if (!effectiveSedeId) return "No definida";
+    const found = (sedes || []).find((s) => s.id_sede === Number(effectiveSedeId));
+    return found?.nombre || user?.nombre || "No definida";
+  }, [effectiveSedeId, sedes, user?.nombre]);
+
+  const navbarSedeSelector = canSelectSede ? (
+    <FormControl size="small" sx={{ minWidth: 260 }}>
+      <InputLabel id="navbar-sede-select-label">Cambiar sede</InputLabel>
+      <Select
+        labelId="navbar-sede-select-label"
+        value={selectedSedeId || ""}
+        label="Cambiar sede"
+        onChange={(e) => setSelectedSedeId(Number(e.target.value))}
+      >
+        {(sedes || []).map((sede) => (
+          <MenuItem key={sede.id_sede} value={sede.id_sede}>
+            {sede.nombre}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  ) : null;
+
   useEffect(() => {
     let isMounted = true;
 
@@ -81,9 +142,18 @@ function DashboardPage() {
       setLoading(true);
       setError("");
       try {
+        const params = new URLSearchParams({
+          month: String(selectedMonth),
+          year: String(selectedYear),
+        });
+
+        if (effectiveSedeId) {
+          params.append("sede_id", String(effectiveSedeId));
+        }
+
         const [consumiblesResult, entriesResult] = await Promise.allSettled([
-          apiFetch("inv_consumibles/dashboard-summary"),
-          apiFetch(`access/dashboard-daily-entries?month=${selectedMonth}&year=${selectedYear}`),
+          apiFetch(`inv_consumibles/dashboard-summary${effectiveSedeId ? `?sede_id=${effectiveSedeId}` : ""}`),
+          apiFetch(`access/dashboard-daily-entries?${params.toString()}`),
         ]);
 
         if (!isMounted) return;
@@ -112,7 +182,7 @@ function DashboardPage() {
       }
     }
 
-    if (user?.sede_id) {
+    if (effectiveSedeId) {
       fetchDashboardData();
     } else {
       setLoading(false);
@@ -122,7 +192,7 @@ function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [user?.sede_id, selectedMonth, selectedYear]);
+  }, [effectiveSedeId, selectedMonth, selectedYear]);
 
   const topDailyEntries = useMemo(
     () =>
@@ -220,8 +290,8 @@ function DashboardPage() {
   }, [consumiblesSummary]);
 
   return (
-    <MDBox sx={{ pb: 3 }}>
-      <DashboardNavbar />
+    <MDBox sx={{ pb: 3, pt: 8 }}>
+      <DashboardNavbar title={`Sede ${selectedSedeName}`} middleContent={navbarSedeSelector} />
 
       <MDBox
         ref={printContainerRef}
@@ -249,10 +319,6 @@ function DashboardPage() {
         ) : null}
       </MDBox>
 
-      <MDBox mb={3}>
-        <MDTypography variant="h4">Sede {user?.nombre || "No definida"}</MDTypography>
-      </MDBox>
-
       {loading && (
         <MDBox display="flex" justifyContent="center" py={8}>
           <CircularProgress />
@@ -277,7 +343,7 @@ function DashboardPage() {
             <MDBox p={3}>
               <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <MDTypography variant="h6" mb={1}>
-                  Inventario consumible sede {user?.nombre}
+                  Inventario consumible sede {selectedSedeName}
                 </MDTypography>
                 <Button
                   variant="outlined"
@@ -327,7 +393,7 @@ function DashboardPage() {
             <MDBox p={3}>
               <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <MDTypography variant="h6" mb={1}>
-                  Personas ingresadas por dia en la sede {user?.nombre} en {monthNames[selectedMonth - 1]} {selectedYear}
+                  Personas ingresadas por dia en la sede {selectedSedeName} en {monthNames[selectedMonth - 1]} {selectedYear}
                 </MDTypography>
                 
                 <MDBox mb={2}>

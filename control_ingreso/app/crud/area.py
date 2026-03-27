@@ -94,24 +94,39 @@ def change_area_status(db: Session, id_area: int, nuevo_estado: bool) -> bool:
         raise Exception("Error de base de datos al cambiar el estado del centro")
 
 #Función para obtener todos las áreas haciendo uso de la paginación
-def get_all_areas_pag(db: Session, skip:int = 0, limit = 10):
+def get_all_areas_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
     """
     Obtiene las áreas con paginación.
     También realizar una segunda consulta para contar total de areas.
+    compatible con PostgreSQL, MySQL y SQLite 
     """
     try: 
-        #Contamos la cantidad de areas existenes
-        count_query = text("""SELECT COUNT(id_area) AS total 
-                     FROM areas
+        search = search.strip()
+        query_params = {"skip": skip, "limit": limit}
+
+        where_clause = ""
+        if search:
+            where_clause = """
+                WHERE a.id_area LIKE :search
+                   OR a.nombre_area LIKE :search
+                   OR (CASE WHEN a.estado THEN 'activo' ELSE 'inactivo' END) LIKE :search
+            """
+            query_params["search"] = f"%{search}%"
+
+        #Contamos la cantidad de areas existentes
+        count_query = text(f"""SELECT COUNT(id_area) AS total 
+                     FROM areas a
+                     {where_clause}
                      """)
-        total_result = db.execute(count_query).scalar()
+        total_result = db.execute(count_query, query_params).scalar()
 
         #2 Consultar las áreas
-        data_query = text("""SELECT a.id_area, a.nombre_area, a.estado
+        data_query = text(f"""SELECT a.id_area, a.nombre_area, a.estado
                     FROM areas a
+                    {where_clause}
                      LIMIT :limit OFFSET :skip
         """)
-        areas_list = db.execute(data_query,{"skip": skip, "limit": limit}).mappings().all()
+        areas_list = db.execute(data_query, query_params).mappings().all()
         
         return {
                 "total": total_result or 0,

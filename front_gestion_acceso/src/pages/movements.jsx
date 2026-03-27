@@ -12,6 +12,7 @@ import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function movements() {
@@ -73,7 +74,7 @@ function movements() {
       const idTipo = tipoSeleccionado?.id_tipo;
 
       if (!idTipo) {
-        alert("Tipo de movimiento no válido");
+        alerts.warning("Tipo de movimiento no válido");
         return;
       }
 
@@ -91,7 +92,7 @@ function movements() {
       );
       //fetchMovements();
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 

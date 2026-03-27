@@ -117,7 +117,7 @@ export default function UserEditModal({ onCancel, user, onSave }) {
         <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
-        <MDButton color="info" type="submit" variant="gradient">
+        <MDButton sx={{background: "green"}} type="submit" variant="gradient">
           Actualizar
         </MDButton>
       </MDBox>

@@ -6,11 +6,13 @@ import MDInput from "@/components/MDInput";
 import MDTypography from "@/components/MDTypography";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
+import { alerts } from "@/hooks/alerts";
 
 function Auth_salidaCreateModal({ onSave, onCancel }) {
 
   const [nomb_user, setNomb_user] = useState([]);
   const [equipos_sede, setEquipos_sede] = useState([]);
+  const [tiposMovimiento, setTiposMovimiento] = useState([]);
 
   const [form, setForm] = useState({
     serial: "",
@@ -18,6 +20,7 @@ function Auth_salidaCreateModal({ onSave, onCancel }) {
     nombre_usuario: "",
     equipo_id: 0,
     usuario_id_autoriza: 0,
+    tipo_id: null,
     destino: "",
     motivo: "",
     estado: false,
@@ -27,7 +30,7 @@ function Auth_salidaCreateModal({ onSave, onCancel }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setForm(prev => ({...prev, [name]: value}));
+    setForm(prev => ({ ...prev, [name]: value }));
 
     if (name === "serial") {
       const equipoEncontrado = equipos_sede.find(
@@ -38,7 +41,7 @@ function Auth_salidaCreateModal({ onSave, onCancel }) {
         setForm(prev => ({
           ...prev,
           serial: value,
-          categoria: equipoEncontrado.categoria,
+          categoria: equipoEncontrado.nombre_categoria,
           equipo_id: equipoEncontrado.id_equipo_sede
         }));
       }
@@ -73,9 +76,58 @@ function Auth_salidaCreateModal({ onSave, onCancel }) {
       .catch(err => console.error(err));
   }, []);
 
+  useEffect(() => {
+    apiFetch("type/all-movements-types")
+      .then((data) => {
+        const tipos = Array.isArray(data) ? data : [];
+        setTiposMovimiento(tipos);
+
+        const tipoSalida = tipos.find((tipo) =>
+          String(tipo.nombre_tipo || "").toLowerCase().includes("salida")
+        );
+
+        if (tipoSalida) {
+          setForm((prev) => ({ ...prev, tipo_id: tipoSalida.id_tipo }));
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
   return (
     <form onSubmit={(e) => {
       e.preventDefault();
+
+      if (!form.usuario_id_autoriza) {
+        alerts.warning("Debes seleccionar el usuario que autoriza.");
+        return;
+      }
+
+      if (!form.equipo_id) {
+        alerts.warning("Debes seleccionar un serial de equipo valido.");
+        return;
+      }
+
+      if (!form.tipo_id) {
+        const tipoSalida = tiposMovimiento.find((tipo) =>
+          String(tipo.nombre_tipo || "").toLowerCase().includes("salida")
+        );
+
+        if (!tipoSalida?.id_tipo) {
+          alerts.warning("No hay un tipo de movimiento configurado para salida.");
+          return;
+        }
+      }
+
+      if (!form.destino || form.destino.trim().length < 3) {
+        alerts.warning("El destino debe tener minimo 3 caracteres.");
+        return;
+      }
+
+      if (!form.motivo || form.motivo.trim().length < 3) {
+        alerts.warning("El motivo debe tener minimo 3 caracteres.");
+        return;
+      }
+
       const now = new Date();
 
       const fecha_actual =
@@ -86,13 +138,17 @@ function Auth_salidaCreateModal({ onSave, onCancel }) {
         String(now.getMinutes()).padStart(2, "0") + ":" +
         String(now.getSeconds()).padStart(2, "0");
 
-      const data = { 
+      const data = {
         equipo_id: form.equipo_id,
         usuario_id_autoriza: form.usuario_id_autoriza,
+        tipo_id: form.tipo_id || tiposMovimiento.find((tipo) =>
+          String(tipo.nombre_tipo || "").toLowerCase().includes("salida")
+        )?.id_tipo,
         destino: form.destino,
         motivo: form.motivo,
-        estado: form.estado, 
-        fecha_autorizacion: fecha_actual };
+        estado: form.estado,
+        fecha_autorizacion: fecha_actual
+      };
       onSave(data);
     }}>
 
@@ -166,7 +222,7 @@ function Auth_salidaCreateModal({ onSave, onCancel }) {
           Cancelar
         </MDButton>
 
-        <MDButton color="info" variant="gradient" type="submit">
+        <MDButton sx={{background: "green"}} variant="gradient" type="submit">
           Registrar
         </MDButton>
       </MDBox>

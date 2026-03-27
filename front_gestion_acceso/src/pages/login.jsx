@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { login } from "../services/auth";
 import SignIn from "@/layouts/authentication/sign-in";
 import { useAuth } from "@/context/authContext";
+import { alerts } from "@/hooks/alerts";
 
 //función para la vista de inicio de sesión
 function Login() {
@@ -35,7 +36,7 @@ function Login() {
       //Nota: Cambiar para que se muestre en un dashboard
       navigate("/dashboard", {replace: true});
     } catch {
-      alert("Credenciales incorrectas");
+      await alerts.error("Credenciales incorrectas");
     }
   }
 

@@ -13,6 +13,7 @@ import CentroCreateModal from "@/components/centros/center_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 function Centros() {
   const [centros, setCentros] = useState([]);
@@ -52,7 +53,7 @@ function Centros() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -67,10 +68,10 @@ function Centros() {
 
       fetchCentros();
       setOpenCreate(false);
-      alert("Centro creado con éxito");
+      alerts.success("Centro creado con éxito");
     } catch (error) {
       if (error.status === 401) {
-        alert("Error al crear el centro");
+        alerts.error("Error al crear el centro");
       }
     }
   }
@@ -97,13 +98,13 @@ function Centros() {
 
       if (response) {
         fetchCentros();
-        alert("Centro actualizado con exito")
+        alerts.success("Centro actualizado con exito");
         setSelectedCentro(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar el centro");
+      alerts.error("Error al actualizar el centro");
     }
   }
 

@@ -97,19 +97,44 @@ def change_city_status(db: Session, id_ciudad: int, nuevo_estado: bool) -> bool:
         logger.error(f"Error al cambiar el estado de la ciudad {id_ciudad}: {e}")
         raise Exception("Error de base de datos al cambiar el estado de la ciudad")
 
-def get_all_cities_pag(db: Session, skip:int = 0, limit = 10):
+def get_all_cities_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
+    """
+    Obtiene las ciudades con paginación y búsqueda.
+    También realiza una segunda consulta para contar total de ciudades.
+    compatible con PostgreSQL, MySQL y SQLite
+    """
     try:
-        count_query = text("SELECT COUNT(id_ciudad) FROM ciudades")
-        total_cities = db.execute(count_query).scalar()
+        search = search.strip()
+        query_params = {"skip": skip, "limit": limit}
+
+        where_clause = ""
+        if search:
+            where_clause = """
+                WHERE CAST(ciu.id_ciudad AS CHAR) LIKE :search
+                   OR ciu.nombre LIKE :search
+                   OR ciu.codigo LIKE :search
+                   OR dep.nombre LIKE :search
+                   OR (CASE WHEN ciu.estado THEN 'activo' ELSE 'inactivo' END) LIKE :search
+            """
+            query_params["search"] = f"%{search}%"
+
+        count_query = text(f"""
+            SELECT COUNT(ciu.id_ciudad) AS total
+            FROM ciudades ciu
+            INNER JOIN departamentos dep on ciu.departamento_id = dep.id_departamento
+            {where_clause}
+        """)
+        total_cities = db.execute(count_query, query_params).scalar()
         
-        query = text("""
+        query = text(f"""
             SELECT ciu.id_ciudad, ciu.departamento_id, ciu.nombre, ciu.codigo, ciu.estado,
             dep.nombre AS nombre_departamento
             FROM ciudades ciu
             INNER JOIN departamentos dep on ciu.departamento_id = dep.id_departamento
+            {where_clause}
             LIMIT :limit OFFSET :skip
         """)
-        cities_result = db.execute(query, {"skip": skip, "limit": limit}).mappings().all()
+        cities_result = db.execute(query, query_params).mappings().all()
         return {
             "total" : total_cities or 0,
             "ciudades": cities_result

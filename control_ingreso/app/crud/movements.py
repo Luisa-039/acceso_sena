@@ -72,11 +72,11 @@ def get_all_movements_pag(db: Session, skip:int = 0, limit = 10, search: str = "
         if search:
             where_clause = """
                 WHERE CAST(m.id_movimiento_sede AS CHAR) LIKE :search
-                   OR CAST(m.autorizacion_id AS CHAR) LIKE :search
-                   OR e.serial LIKE :search
-                   OR u.nombre_usuario LIKE :search
-                   OR c.nombre_categoria LIKE :search
-                   OR tm.nombre_tipo LIKE :search
+                OR CAST(m.autorizacion_id AS CHAR) LIKE :search
+                OR e.serial LIKE :search
+                OR u.nombre_usuario LIKE :search
+                OR c.nombre_categoria LIKE :search
+                OR tm.nombre_tipo LIKE :search
             """
             query_params["search"] = f"%{search}%"
 
@@ -94,14 +94,15 @@ def get_all_movements_pag(db: Session, skip:int = 0, limit = 10, search: str = "
         #2 Consultar movimientos
         data_query = text(f"""
             SELECT m.id_movimiento_sede, m.equipo_id, m.autorizacion_id,
-                   m.usuario_registra, m.tipo_id, m.fecha_movimiento, e.serial AS serial_equipo,
-                   e.categoria_id, u.nombre_usuario, c.nombre_categoria, tm.nombre_tipo
+            m.usuario_registra, m.tipo_id, m.fecha_movimiento, e.serial AS serial_equipo,
+            e.categoria_id, u.nombre_usuario, c.nombre_categoria, tm.nombre_tipo
             FROM movimientos_equipos_sede m
             INNER JOIN equipos_sede_inv e ON m.equipo_id = e.id_equipo_sede
             INNER JOIN categorias c ON c.id_categoria = e.categoria_id
             INNER JOIN usuarios as u ON u.id_usuario = m.usuario_registra
             INNER JOIN tipo_movimientos tm ON tm.id_tipo = m.tipo_id
             {where_clause}
+            ORDER BY m.fecha_movimiento DESC
             LIMIT :limit OFFSET :skip
         """)
         movements_list = db.execute(data_query, query_params).mappings().all()

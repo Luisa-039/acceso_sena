@@ -151,6 +151,26 @@ def update_autorizacion_by_id(
 def change_autorizacion_status(db: Session, id_autorizacion: int, estado: bool, fecha_movimiento):
 
     try:
+        current_status_query = text("""
+            SELECT estado
+            FROM autorizacion_salida
+            WHERE id_autorizacion = :id_autorizacion
+        """)
+
+        current_status = db.execute(current_status_query, {
+            "id_autorizacion": id_autorizacion
+        }).scalar()
+
+        if current_status is None:
+            return "not_found"
+
+        if current_status:
+            return "already_authorized"
+
+        # Solo se permite transición de pendiente a autorizado
+        if not estado:
+            return "invalid_transition"
+
         update_query = text("""
             UPDATE autorizacion_salida
             SET estado = :estado
@@ -162,30 +182,27 @@ def change_autorizacion_status(db: Session, id_autorizacion: int, estado: bool, 
             "id_autorizacion": id_autorizacion
         })
 
-        # SOLO si se autoriza se crea el movimiento
-        if estado:
+        insert_mov = text("""
+            INSERT INTO movimientos_equipos_sede
+            (equipo_id, autorizacion_id, usuario_registra, fecha_movimiento, tipo_id)
+            SELECT equipo_id, id_autorizacion, usuario_id_autoriza, :fecha_movimiento, tipo_id
+            FROM autorizacion_salida
+            WHERE id_autorizacion = :id_autorizacion
+        """)
 
-            insert_mov = text("""
-                INSERT INTO movimientos_equipos_sede
-                (equipo_id, autorizacion_id,  usuario_registra, fecha_movimiento, tipo_id)
-                SELECT equipo_id, id_autorizacion, usuario_id_autoriza, :fecha_movimiento, tipo_id
-                FROM autorizacion_salida
-                WHERE id_autorizacion = :id_autorizacion
-            """)
-
-            db.execute(insert_mov, {
-                "id_autorizacion": id_autorizacion,
-                "fecha_movimiento": fecha_movimiento
-            })
+        db.execute(insert_mov, {
+            "id_autorizacion": id_autorizacion,
+            "fecha_movimiento": fecha_movimiento
+        })
 
         db.commit()
 
-        return True
+        return "updated"
 
     except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"Error al cambiar estado: {e}")
-        return False
+        return "error"
 
     
     

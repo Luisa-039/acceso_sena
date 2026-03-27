@@ -12,6 +12,7 @@ import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import EncuestaCreateModal from "@/components/encuestas/encuesta_create";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 function Encuestas() {
   const [encuestas, setEncuestas] = useState([]);
@@ -50,7 +51,7 @@ function Encuestas() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -65,10 +66,10 @@ function Encuestas() {
 
       fetchencuestas();
       setOpenCreate(false);
-      alert("Encuesta creada con éxito");
+      alerts.success("Encuesta creada con éxito");
     } catch (error) {
       if (error.status === 401) {
-        alert("Error al crear la encuesta");
+        alerts.error("Error al crear la encuesta");
       }
     }
   }
@@ -95,13 +96,13 @@ function Encuestas() {
 
   //     if (response) {
   //       fetchencuestas();
-  //       alert("Centro actualizado con exito")
+  //       alerts.success("Centro actualizado con exito");
   //       setSelectedCentro(null);
   //     }
 
   //   } catch (error) {
   //     console.error(error);
-  //     alert("Error al actualizar el centro");
+  //     alerts.error("Error al actualizar el centro");
   //   }
   // }
 
@@ -143,24 +144,7 @@ function Encuestas() {
         );
       }
     },
-    // ...(canUpdate
-    //   ? [
-    //       {
-    //         id: "acciones",
-    //         header: "Acciones",
-    //         cell: ({ row }) => (
-    //           <MDButton
-    //             variant="text"
-    //             size="small"
-    //             sx={getEditButtonStyle}
-    //             onClick={() => setSelectedCentro(row.original.centro)}
-    //           >
-    //             Editar
-    //           </MDButton>
-    //         ),
-    //       },
-    //     ]
-    //   : [])
+   
   ];
   const stars = [1, 2, 3, 4, 5];
   const renderStars = (calificacion) => {

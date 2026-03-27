@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/authContext";
 
 import App from "./App";
+import "./styles/sweetalert.css";
 
 import { MaterialUIControllerProvider } from "./context";
 

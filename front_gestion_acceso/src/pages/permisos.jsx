@@ -13,6 +13,7 @@ import PermisoCreateModal from "@/components/permisos/permiso_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function permisos() {
@@ -67,14 +68,14 @@ function permisos() {
       );
 
       if (response) {
-        alert("Permiso actualizado con éxito");
+        alerts.success("Permiso actualizado con éxito");
         setSelectedPermisos(null);
         await fetchPermisos();
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar permiso");
+      alerts.error("Error al actualizar permiso");
     }
   }
 
@@ -90,13 +91,13 @@ function permisos() {
       setOpenCreate(false);
       fetchPermisos();
 
-      alert("Permiso creado con éxito");
+      alerts.success("Permiso creado con éxito");
 
     } catch (error) {
       if (error.detail === "Este permiso ya existe") {
-        alert("Este permiso ya existe");
+        alerts.warning("Este permiso ya existe");
       } else {
-        alert("Error al crear el permiso");
+        alerts.error("Error al crear el permiso");
       }
     }
   }

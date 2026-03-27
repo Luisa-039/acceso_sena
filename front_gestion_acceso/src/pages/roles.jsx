@@ -13,6 +13,7 @@ import RolCreateModal from "@/components/roles/rol_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function Roles() {
@@ -52,7 +53,7 @@ function Roles() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -77,14 +78,14 @@ function Roles() {
       );
 
       if (response) {
-        alert("Rol actualizado con exito")
+        alerts.success("Rol actualizado con exito");
         setSelectedRol(null);
         await fetchRoles();
       }
 
     } catch (error) {
       console.error(error)
-      alert("Error al actualizar rol");
+      alerts.error("Error al actualizar rol");
     }
   }
 
@@ -100,12 +101,12 @@ function Roles() {
       setOpenCreate(false);
       fetchRoles();
 
-      alert("Rol creado con éxito");
+      alerts.success("Rol creado con éxito");
 
       setOpenCreate(false);
 
     } catch (error) {
-        alert("Error al crear el rol");
+        alerts.error("Error al crear el rol");
     }
   }
 

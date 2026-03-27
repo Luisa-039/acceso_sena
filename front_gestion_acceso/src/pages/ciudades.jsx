@@ -13,6 +13,7 @@ import CityCreateModal from "@/components/ciudades/cities_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 function Ciudades() {
   const [ciudades, setCiudades] = useState([]);
@@ -71,7 +72,7 @@ function Ciudades() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -86,10 +87,10 @@ function Ciudades() {
 
       fetchCiudades();
       setOpenCreate(false);
-      alert("Ciudad creada con éxito");
+      alerts.success("Ciudad creada con éxito");
     } catch (error) {
       if (error.status === 401) {
-        alert("Error al crear la ciudad");
+        alerts.error("Error al crear la ciudad");
       }
     }
   }
@@ -115,13 +116,14 @@ function Ciudades() {
       );
 
       if (response) {
-        alert("Ciudad actualizada con éxito")
+        alerts.success("Ciudad actualizada con éxito");
+        fetchCiudades();
         setSelectedCiudad(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar la ciudad");
+      alerts.error("Error al actualizar la ciudad");
     }
   }
 

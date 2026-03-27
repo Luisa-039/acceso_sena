@@ -48,7 +48,7 @@ export default function ModuloEditModal({ onCancel, modulo, onSave }) {
           Cancelar
         </MDButton>
 
-        <MDButton color="info" variant="gradient" type="submit">
+        <MDButton sx={{background: "green"}} variant="gradient" type="submit">
           Actualizar
         </MDButton>
       </MDBox>

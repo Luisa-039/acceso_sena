@@ -26,7 +26,7 @@ def create_autorizacion_salida(
 ):
     try:
         id_rol = user_token.rol_id
-        if not verify_permissions(db, id_rol, modulo, "seleccionar"):
+        if not verify_permissions(db, id_rol, modulo, "insertar"):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
         crud_autorizacion.create_autorizacion_salida(db, autorizacion)
@@ -169,10 +169,19 @@ def change_autorizacion_status(
     if not verify_permissions(db, id_rol, modulo, "actualizar"):
          raise HTTPException(status_code=401, detail="Usuario no autorizado")
     
-    success = crud_autorizacion.change_autorizacion_status(db, id_salida, data.estado, data.fecha_movimiento )
+    status_change = crud_autorizacion.change_autorizacion_status(db, id_salida, data.estado, data.fecha_movimiento)
 
-    if not success:
+    if status_change == "not_found":
         raise HTTPException(status_code=404, detail="Autorización no encontrada")
+
+    if status_change == "already_authorized":
+        raise HTTPException(status_code=409, detail="La autorización ya fue aprobada")
+
+    if status_change == "invalid_transition":
+        raise HTTPException(status_code=400, detail="Solo se permite cambiar de pendiente a autorizado")
+
+    if status_change != "updated":
+        raise HTTPException(status_code=500, detail="No se puede cambiar el estado")
 
     return {"message": "Estado actualizado"}
 

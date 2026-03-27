@@ -13,6 +13,7 @@ import ModuloEditModal from "@/components/modulos/modulos_edit";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function modulo_mov() {
@@ -66,7 +67,7 @@ function modulo_mov() {
       );
 
       if (response) {
-        alert("Módulo actualizado con éxito");
+        alerts.success("Módulo actualizado con éxito");
         setOpenEdit(false);
         setSelectedModulo(null);
         await fetchModulo();
@@ -74,7 +75,7 @@ function modulo_mov() {
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar Módulo");
+      alerts.error("Error al actualizar Módulo");
     }
   }
 
@@ -90,11 +91,11 @@ function modulo_mov() {
       setOpenCreate(false);
       fetchModulo();
 
-      alert("Módulo creado con éxito");
+      alerts.success("Módulo creado con éxito");
 
     } catch (error) {
       {
-        alert("Error al crear el Módulo");
+        alerts.error("Error al crear el Módulo");
       }
     }
   }

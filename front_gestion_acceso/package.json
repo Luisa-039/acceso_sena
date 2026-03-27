@@ -28,6 +28,7 @@
     "regenerator-runtime": "^0.14.1",
     "stylis": "^4.3.6",
     "stylis-plugin-rtl": "^2.1.1",
+    "sweetalert2": "^11.26.24",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

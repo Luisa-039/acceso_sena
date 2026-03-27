@@ -11,6 +11,7 @@ import DataTable from "@/examples/Tables/DataTable";
 import CategoriaCreateModal from "@/components/categorias/categoria_create";
 import CategoriaEditModal from "@/components/categorias/categoria_edit";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { alerts } from "@/hooks/alerts";
 
 
 function Categorias() {
@@ -40,7 +41,7 @@ function Categorias() {
       );
 
       if (response) {
-        alert("Categoría actualizada con éxito");
+        alerts.success("Categoría actualizada con éxito");
         setOpenEdit(false);
         setSelectedCategorias(null);
         await fetchCategorias();
@@ -48,7 +49,7 @@ function Categorias() {
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar Categoría");
+      alerts.error("Error al actualizar Categoría");
     }
   }
 
@@ -62,11 +63,11 @@ function Categorias() {
       setOpenCreate(false);
       fetchCategorias();
 
-      alert("Categoría creada con éxito");
+      alerts.success("Categoría creada con éxito");
 
     } catch (error) {
       {
-        alert("Error al crear la Categoría");
+        alerts.error("Error al crear la Categoría");
       }
     }
   }
@@ -86,7 +87,7 @@ function Categorias() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 

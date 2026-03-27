@@ -28,7 +28,7 @@ import {
 import { useAuth } from "@/context/authContext";
 
 
-function DashboardNavbar({ absolute = "false", light = "false" }) {
+function DashboardNavbar({ absolute = "false", light = "false", title = "", middleContent = null }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useMaterialUIController();
   const { transparentNavbar, fixedNavbar, darkMode } = controller;
@@ -108,13 +108,34 @@ function DashboardNavbar({ absolute = "false", light = "false" }) {
         sx={(theme) => ({
           ...navbarContainer(theme),
           display: "flex",
-          flexWrap: "nowrap",
+          flexWrap: "wrap",
           alignItems: "center",
+          rowGap: 1
         })}
       >
 
+        {/* LEFT */}
+        <MDBox minWidth={0}>
+          {title ? (
+            <MDBox component="span" sx={{ fontSize: "2rem", fontWeight: 700, color: "#244673" }}>
+              {title}
+            </MDBox>
+          ) : null}
+        </MDBox>
+
+        {/* CENTER */}
+        <MDBox
+          flex={1}
+          display="flex"
+          justifyContent="center"
+          minWidth={{ xs: "100%", md: "auto" }}
+          order={{ xs: 3, md: 2 }}
+        >
+          {middleContent}
+        </MDBox>
+
         {/* RIGHT */}
-        <MDBox display="flex" alignItems="center" ml="auto">
+        <MDBox display="flex" alignItems="center" ml="auto" order={{ xs: 2, md: 3 }}>
           <MDBox
             display="flex"
             alignItems="center"
@@ -167,6 +188,8 @@ DashboardNavbar.propTypes = {
   absolute: PropTypes.bool,
   light: PropTypes.bool,
   isMini: PropTypes.bool,
+  title: PropTypes.string,
+  middleContent: PropTypes.node,
 };
 
 export default DashboardNavbar;

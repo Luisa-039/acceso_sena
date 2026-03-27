@@ -249,7 +249,7 @@ function Equipo_sedeCreateModal({ onSave, onCancel }) {
           Cancelar
         </MDButton>
 
-        <MDButton color="info" variant="gradient" type="submit">
+        <MDButton sx={{background: "green"}} variant="gradient" type="submit">
           Registrar
         </MDButton>
       </MDBox>

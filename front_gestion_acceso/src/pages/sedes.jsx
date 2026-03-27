@@ -13,6 +13,7 @@ import SedeCreateModal from "@/components/sedes/sede_create";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 function Sedes() {
   const [sedes, setSedes] = useState([]);
@@ -71,7 +72,7 @@ function Sedes() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -86,10 +87,10 @@ function Sedes() {
 
       fetchSedes();
       setOpenCreate(false);
-      alert("Sede creada con éxito");
+      alerts.success("Sede creada con éxito");
     } catch (error) {
       if (error.status === 401) {
-        alert("Error al crear el Sede");
+        alerts.error("Error al crear el Sede");
       }
     }
   }
@@ -115,13 +116,13 @@ function Sedes() {
       );
 
       if (response) {
-        alert("Sede actualizada con exito")
+        alerts.success("Sede actualizada con exito");
         setSelectedSede(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar la sede");
+      alerts.error("Error al actualizar la sede");
     }
   }
 

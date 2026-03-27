@@ -102,29 +102,53 @@ def update_estado_consumible(db:Session, id_consumible: int, estado_consumible: 
         logger.error(f"Error al cambiar el estado del consumible {id_consumible}: {e}")
         raise Exception("Error de base de datos al cambiar el estado del consumible")
     
-def get_all_consumible_pag(db: Session, skip:int = 0, limit = 10):
+def get_all_consumible_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
     """
-    Obtiene los consumibles con paginación.
-    También realizar una segunda consulta para contar total de equipos.
+    Obtiene los consumibles con paginación y búsqueda.
+    También realizar una segunda consulta para contar total de consumibles.
     compatible con PostgreSQL, MySQL y SQLite 
     """
     try: 
-        
-        count_query = text("""SELECT COUNT(id_consumible) AS total 
-                     FROM inv_consumibles
-                     """)
-        total_result = db.execute(count_query).scalar()
+        search = search.strip()
+        query_params = {"skip": skip, "limit": limit}
 
-        #2 Consultar equipos
-        data_query = text("""SELECT ic.id_consumible, ic.ubicacion, ic.placa, ic.categoria_id, ic.marca, 
-                             ic.modelo, ic.sede_id, ic.fecha_registro, ic.cantidad, ic.porcentaje_toner,
-                             ic.estado, s.nombre as nombre_sede, c.nombre_categoria
-                             FROM inv_consumibles as ic
-                             INNER JOIN sedes as s ON ic.sede_id = s.id_sede
-                             INNER JOIN categorias as c ON ic.categoria_id = c.id_categoria
-                             LIMIT :limit OFFSET :skip
-                        """)
-        equipos_list = db.execute(data_query,{"skip": skip, "limit": limit}).mappings().all()
+        where_clause = ""
+        if search:
+            where_clause = """
+                WHERE CAST(ic.id_consumible AS CHAR) LIKE :search
+                   OR ic.placa LIKE :search
+                   OR ic.ubicacion LIKE :search
+                   OR ic.marca LIKE :search
+                   OR ic.modelo LIKE :search
+                   OR s.nombre LIKE :search
+                   OR c.nombre_categoria LIKE :search
+                   OR CAST(ic.cantidad AS CHAR) LIKE :search
+                   OR CAST(ic.porcentaje_toner AS CHAR) LIKE :search
+                   OR (CASE WHEN ic.estado THEN 'activo' ELSE 'inactivo' END) LIKE :search
+            """
+            query_params["search"] = f"%{search}%"
+
+        count_query = text(f"""
+            SELECT COUNT(ic.id_consumible) AS total 
+            FROM inv_consumibles ic
+            INNER JOIN sedes as s ON ic.sede_id = s.id_sede
+            INNER JOIN categorias as c ON ic.categoria_id = c.id_categoria
+            {where_clause}
+        """)
+        total_result = db.execute(count_query, query_params).scalar()
+
+        #2 Consultar consumibles
+        data_query = text(f"""
+            SELECT ic.id_consumible, ic.ubicacion, ic.placa, ic.categoria_id, ic.marca, 
+                   ic.modelo, ic.sede_id, ic.fecha_registro, ic.cantidad, ic.porcentaje_toner,
+                   ic.estado, s.nombre as nombre_sede, c.nombre_categoria
+            FROM inv_consumibles as ic
+            INNER JOIN sedes as s ON ic.sede_id = s.id_sede
+            INNER JOIN categorias as c ON ic.categoria_id = c.id_categoria
+            {where_clause}
+            LIMIT :limit OFFSET :skip
+        """)
+        equipos_list = db.execute(data_query, query_params).mappings().all()
         
         return {
                 "total": total_result or 0,

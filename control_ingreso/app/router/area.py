@@ -106,6 +106,7 @@ def change_center_status(
 def get_areas_pag(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
+    search: str = Query("", min_length=0),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ): 
@@ -115,7 +116,7 @@ def get_areas_pag(
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
         skip = (page - 1) * page_size
-        data = crud_area.get_all_areas_pag(db, skip=skip, limit=page_size)
+        data = crud_area.get_all_areas_pag(db, skip=skip, limit=page_size, search=search)
 
         total = data["total"]
         areas = data["areas"]

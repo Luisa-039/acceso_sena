@@ -11,6 +11,7 @@ import DataTable from "@/examples/Tables/DataTable";
 import AreaCreateModal from "@/components/areas/area_create";
 import AreaEditModal from "@/components/areas/area_edit";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
+import { alerts } from "@/hooks/alerts";
 
 
 function Areas() {
@@ -45,7 +46,7 @@ function Areas() {
       );
 
       if (response) {
-        alert("Área actualizada con éxito");
+        alerts.success("Área actualizada con éxito");
         setOpenEdit(false);
         setSelectedAreas(null);
         await fetchAreas();
@@ -53,7 +54,7 @@ function Areas() {
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar el área");
+      alerts.error("Error al actualizar el área");
     }
   }
 
@@ -67,11 +68,11 @@ function Areas() {
       setOpenCreate(false);
       fetchAreas();
 
-      alert("área creada con éxito");
+      alerts.success("área creada con éxito");
 
     } catch (error) {
       {
-        alert("Error al crear el área");
+        alerts.error("Error al crear el área");
       }
     }
   }
@@ -91,7 +92,7 @@ function Areas() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 

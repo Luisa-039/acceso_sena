@@ -103,39 +103,61 @@ def change_encuesta_status(db: Session, id_encuesta: int, nuevo_estado: bool) ->
         logger.error(f"Error al cambiar el estado de la encuesta {id_encuesta}: {e}")
         raise Exception("Error de base de datos al cambiar el estado de la encuesta")
 
-def get_all_encuestas_pag(db: Session, skip:int = 0, limit = 10):
+def get_all_encuestas_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
     """
-    Obtiene las encuestas con paginación.
-    También realizar una segunda consulta para contar total de encuestas.
+    Obtiene las encuestas con paginación y búsqueda.
+    También realiza una segunda consulta para contar total de encuestas.
     compatible con PostgreSQL, MySQL y SQLite 
     """
     try: 
+        search = search.strip()
+        query_params = {"skip": skip, "limit": limit}
+
+        where_clause = ""
+        if search:
+            where_clause = """
+                WHERE CAST(e.id_encuesta AS CHAR) LIKE :search
+                   OR CAST(e.acceso_id AS CHAR) LIKE :search
+                   OR CAST(e.calificacion AS CHAR) LIKE :search
+                   OR e.observacion LIKE :search
+                   OR p.nombre_completo LIKE :search
+                   OR ar.nombre_area LIKE :search
+                   OR se.nombre LIKE :search
+                   OR (CASE WHEN e.estado_encuesta THEN 'enviado' ELSE 'pendiente' END) LIKE :search
+            """
+            query_params["search"] = f"%{search}%"
+
+        count_query = text(f"""
+            SELECT COUNT(e.id_encuesta) AS total 
+            FROM encuestas e
+            INNER JOIN registro_accesos ra ON e.acceso_id = ra.id_acceso
+            INNER JOIN personas p ON ra.persona_id = p.id_persona
+            LEFT JOIN areas ar ON ra.area_id = ar.id_area
+            LEFT JOIN sedes se ON ra.sede_id = se.id_sede
+            {where_clause}
+        """)
         
-        count_query = text("""SELECT COUNT(id_encuesta) AS total 
-                     FROM encuestas""")
-        
-        total_result = db.execute(count_query).scalar()
+        total_result = db.execute(count_query, query_params).scalar()
 
         #2 Consultar encuestas
-        data_query = text("""SELECT e.id_encuesta, e.acceso_id, e.calificacion, e.observacion, e.estado_encuesta,
-                            p.nombre_completo, ar.nombre_area, se.nombre AS nombre_sede
-                            FROM encuestas e
-                            INNER JOIN registro_accesos ra ON e.acceso_id = ra.id_acceso
-                            INNER JOIN personas p ON ra.persona_id = p.id_persona
-                            LEFT JOIN areas ar ON ra.area_id = ar.id_area
-                            LEFT JOIN sedes se ON ra.sede_id = se.id_sede
-                            LIMIT :limit OFFSET :skip
-                        """)
+        data_query = text(f"""
+            SELECT e.id_encuesta, e.acceso_id, e.calificacion, e.observacion, e.estado_encuesta,
+                   p.nombre_completo, ar.nombre_area, se.nombre AS nombre_sede
+            FROM encuestas e
+            INNER JOIN registro_accesos ra ON e.acceso_id = ra.id_acceso
+            INNER JOIN personas p ON ra.persona_id = p.id_persona
+            LEFT JOIN areas ar ON ra.area_id = ar.id_area
+            LEFT JOIN sedes se ON ra.sede_id = se.id_sede
+            {where_clause}
+            LIMIT :limit OFFSET :skip
+        """)
         
-        encuestas_list = db.execute(data_query,{"skip": skip, "limit": limit}).mappings().all()
+        encuestas_list = db.execute(data_query, query_params).mappings().all()
         
         return {
                 "total": total_result or 0,
                 "encuestas": encuestas_list
             }
-    except SQLAlchemyError as e:
-        logger.error(f"Error al obtener las encuestas: {e}", exc_info=True)
-        raise Exception("Error de base de datos al obtener las encuestas")
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener las encuestas: {e}", exc_info=True)
         raise Exception("Error de base de datos al obtener las encuestas")

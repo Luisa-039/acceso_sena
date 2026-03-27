@@ -13,6 +13,7 @@ import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import PersonCreateModal from "@/components/persons/person_create";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 function Persons() {
   const [Persons, setPersons] = useState([]);
@@ -71,7 +72,7 @@ function Persons() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -86,12 +87,12 @@ function Persons() {
 
       fetchPersons();
       setOpenCreate(false);
-      alert("Persona creado con éxito");
+      alerts.success("Persona creado con éxito");
     } catch (error) {
       if (error.status === 400) {
-        alert("Este correo ya está registrado con otra persona");
+        alerts.warning("Este correo ya está registrado con otra persona");
       } else {
-        alert("Error al crear el persona");
+        alerts.error("Error al crear el persona");
       }
     }
   }
@@ -117,13 +118,13 @@ function Persons() {
       );
 
       if (response) {
-        alert("Persona actualizada con exito")
+        alerts.success("Persona actualizada con exito");
         setSelectedPerson(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar la persona");
+      alerts.error("Error al actualizar la persona");
     }
   }
 

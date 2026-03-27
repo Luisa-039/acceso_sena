@@ -13,6 +13,7 @@ import Type_movEditModal from "@/components/type_mov/typeMov_edit";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 
 function type_mov() {
@@ -47,7 +48,7 @@ function type_mov() {
       );
 
       if (response) {
-        alert("Tipo de movimiento actualizado con éxito");
+        alerts.success("Tipo de movimiento actualizado con éxito");
         setOpenEdit(false);
         setSelectedType_mov(null);
         await fetchType_mov();
@@ -55,7 +56,7 @@ function type_mov() {
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar tipo de movimiento");
+      alerts.error("Error al actualizar tipo de movimiento");
     }
   }
 
@@ -71,11 +72,11 @@ function type_mov() {
       setOpenCreate(false);
       fetchType_mov();
 
-      alert("Tipo de movimiento creado con éxito");
+      alerts.success("Tipo de movimiento creado con éxito");
 
     } catch (error) {
       {
-        alert("Error al crear el tipo de movimiento");
+        alerts.error("Error al crear el tipo de movimiento");
       }
     }
   }

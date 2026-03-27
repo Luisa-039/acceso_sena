@@ -13,6 +13,7 @@ import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import EquipoCreateModal from "@/components/equipments/equipments_create";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { alerts } from "@/hooks/alerts";
 
 function Equips_ext() {
   const [Equips_ext, setEquips_ext] = useState([]);
@@ -71,7 +72,7 @@ function Equips_ext() {
         )
       );
     } catch (error) {
-      alert("No se pudo actualizar el estado");
+      alerts.error("No se pudo actualizar el estado");
     }
   }
 
@@ -85,10 +86,10 @@ function Equips_ext() {
       });
       fetchEquips_exts();
       setOpenCreate(false);
-      alert("Equipo creado con éxito");
+      alerts.success("Equipo creado con éxito");
 
     } catch (error) {
-        alert("Error al crear el equipo");
+        alerts.error("Error al crear el equipo");
       }
   }
 
@@ -113,13 +114,13 @@ function Equips_ext() {
       );
 
       if (response) {
-        alert("Equipo actualizado con exito")
+        alerts.success("Equipo actualizado con exito");
         setSelectedEquips_ext(null);
       }
 
     } catch (error) {
       console.error(error);
-      alert("Error al actualizar el equipo");
+      alerts.error("Error al actualizar el equipo");
     }
   }
 

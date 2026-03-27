@@ -239,6 +239,7 @@ def get_dashboard_daily_entries(
     days: int = Query(14, ge=1, le=60),
     month: int | None = Query(None, ge=1, le=12),
     year: int | None = Query(None, ge=2000, le=2100),
+    sede_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -253,16 +254,22 @@ def get_dashboard_daily_entries(
                 detail="Debe enviar month y year juntos para filtrar por mes",
             )
 
+        requested_sede_id = user_token.sede_id
+        if sede_id is not None:
+            if user_token.rol_id not in (1, 2):
+                raise HTTPException(status_code=403, detail="No autorizado para consultar otra sede")
+            requested_sede_id = sede_id
+
         data = crud_access.get_dashboard_daily_entries(
             db=db,
-            sede_id=user_token.sede_id,
+            sede_id=requested_sede_id,
             days=days,
             month=month,
             year=year,
         )
 
         return {
-            "sede_id": user_token.sede_id,
+            "sede_id": requested_sede_id,
             "days": days,
             "month": month,
             "year": year,
