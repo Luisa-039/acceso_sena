@@ -30,18 +30,29 @@ function Users() {
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
 
-  
- const fetchUsers = async () => {
-  const params = new URLSearchParams({
-    page: String(page + 1),
-    page_size: String(pageSize),
-  });
+  const resolveDuplicateUserMessage = (error) => {
+    const detail = String(error?.detail || "").toLowerCase();
 
-  if (searchTerm.trim()) {
-    params.append("search", searchTerm.trim());
-  }
+    if (detail.includes("número de documento") || detail.includes("numero de documento") || detail.includes("documento")) {
+      return "Ya existe un usuario con ese número de documento";
+    } else if (detail.includes("correo") || detail.includes("email")) {
+      return "Ya existe un usuario con ese correo electrónico";
+    }
 
-  const res = await apiFetch(`users/all_users-pag?${params.toString()}`);
+    return null;
+  };
+
+  const fetchUsers = async () => {
+    const params = new URLSearchParams({
+      page: String(page + 1),
+      page_size: String(pageSize),
+    });
+
+    if (searchTerm.trim()) {
+      params.append("search", searchTerm.trim());
+    }
+
+    const res = await apiFetch(`users/all_users-pag?${params.toString()}`);
     setUsers(res.users || []);
     setTotal(res.total_users || 0);
   };
@@ -79,34 +90,34 @@ function Users() {
 
   //Función para actualizar usuario
   async function handleUpdateUser(data) {
-  if (!canUpdate) return;
+    if (!canUpdate) return;
 
-  try {
-    const response = await apiFetch(
-      `users/by_id_user/${selectedUser.id_usuario}`,
-      {
-        method: "PUT",
-        body: data,
+    try {
+      const response = await apiFetch(
+        `users/by_id_user/${selectedUser.id_usuario}`,
+        {
+          method: "PUT",
+          body: data,
+        }
+      );
+      setUsers(users =>
+        users.map(u =>
+          u.id_usuario === selectedUser.id_usuario
+            ? { ...u, ...data }
+            : u
+        )
+      );
+
+      if (response) {
+        alerts.success("Usuario actualizado con exito");
+        setSelectedUser(null);
+        await fetchUsers();
       }
-    );
-    setUsers(users =>
-      users.map(u =>
-        u.id_usuario === selectedUser.id_usuario
-          ? { ...u, ...data }
-          : u
-      )
-    );
 
-    if (response) {
-      alerts.success("Usuario actualizado con exito");
-      setSelectedUser(null);
-      await fetchUsers();
+    } catch (error) {
+      console.error(error)
+      alerts.error("Error al actualizar usuario");
     }
-
-  } catch (error) {
-    console.error(error)
-    alerts.error("Error al actualizar usuario");
-  }
   }
 
   async function handleCreateUser(data) {
@@ -118,22 +129,21 @@ function Users() {
         body: data,
       });
 
-        setOpenCreate(false);
-        fetchUsers();
-
-        alerts.success("Usuario creado con éxito");
-
-        setOpenCreate(false);
+      setOpenCreate(false);
+      fetchUsers();
+      alerts.success("Usuario creado con éxito");
+      setOpenCreate(false);
 
     } catch (error) {
-          if (error.status === 400) {
-              alerts.warning("Este correo ya está registrado con otro usuario");
-          } else {
-              alerts.error("Error al crear el usuario");
-          }
+      const duplicateMessage = resolveDuplicateUserMessage(error);
+      if (duplicateMessage) {
+        alerts.warning(duplicateMessage);
+      } else {
+        alerts.error("Error al crear el usuario");
       }
     }
-    
+  }
+
   const getEditButtonStyle = (activo) => ({
     color: activo ? "success.main" : "error.main",
     minWidth: "80px",
@@ -151,44 +161,46 @@ function Users() {
     { header: "Email", accessorKey: "email" },
     { header: "Telefono", accessorKey: "telefono" },
     { header: "Rol", accessorKey: "rol_user" },
-    { header: "Estado", accessorKey: "estado",
+    {
+      header: "Estado", accessorKey: "estado",
       cell: (info) => {
-    const value = info.getValue();
-    const user = info.row.original.user;
+        const value = info.getValue();
+        const user = info.row.original.user;
 
-    if (!canChangeState) {
-      return value ? "Activo" : "Inactivo";
-    }
+        if (!canChangeState) {
+          return value ? "Activo" : "Inactivo";
+        }
 
-    return (
-      <MDButton
-        variant="text"
-        size="small"
-        onClick={() => handleToggleEstado(user)}
-        sx={getEditButtonStyle(value)}
-      >
-        {value ? "Activo" : "Inactivo"}
-      </MDButton>
-      );}
+        return (
+          <MDButton
+            variant="text"
+            size="small"
+            onClick={() => handleToggleEstado(user)}
+            sx={getEditButtonStyle(value)}
+          >
+            {value ? "Activo" : "Inactivo"}
+          </MDButton>
+        );
+      }
     },
     { header: "Sede", accessorKey: "nombre_sede" },
     ...(canUpdate
       ? [
-          {
-            id: "acciones",
-            header: "Acciones",
-            cell: ({ row }) => (
-              <MDButton
-                variant="text"
-                size="small"
-                sx={getEditButtonStyle}
-                onClick={() => setSelectedUser(row.original.user)}
-              >
-                Editar
-              </MDButton>
-            ),
-          },
-        ]
+        {
+          id: "acciones",
+          header: "Acciones",
+          cell: ({ row }) => (
+            <MDButton
+              variant="text"
+              size="small"
+              sx={getEditButtonStyle}
+              onClick={() => setSelectedUser(row.original.user)}
+            >
+              Editar
+            </MDButton>
+          ),
+        },
+      ]
       : [])
   ];
 
@@ -207,54 +219,54 @@ function Users() {
     <MDBox>
       <DashboardNavbar />
       <MDBox pt={6} pb={3}>
-          <Card>
-            <MDBox p={3}>
-              <MDTypography variant="h3">Usuarios</MDTypography>
-              
-              <DataTable
-                table={{ columns, rows }}
-                canSearch
-                onSearchChange={handleSearchUsers}
-                headerActions={
-                  canInsert ? (
-                    <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)} 
-                    >
-                      Registrar usuario
-                    </MDButton>
-                  ) : null
-                }
+        <Card>
+          <MDBox p={3}>
+            <MDTypography variant="h3">Usuarios</MDTypography>
 
-                pagination={{
-                  manual: true,
-                  page, pageSize,
-                  total, onPageChange: setPage,
-                }}
-                showTotalEntries
-              />
-              
-            </MDBox>
-          </Card>
-          <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
-            <MDBox p={3}>
-              <UserCreateModal
-                onSave={(data) => {
-                  handleCreateUser(data);
-                }}
-                onCancel={() => setOpenCreate(false)}
-              />
-            </MDBox>
-          </Dialog>
-          <Dialog open={Boolean(selectedUser) && canUpdate} onClose={() => setSelectedUser(null)}>
-            
-            <MDBox p={3}>
-              <UserEditModal
-                onSave={handleUpdateUser}
-                onCancel={()=>{setSelectedUser(null)}}
-                user={selectedUser} />
-            </MDBox>
-          </Dialog>
-        </MDBox>
+            <DataTable
+              table={{ columns, rows }}
+              canSearch
+              onSearchChange={handleSearchUsers}
+              headerActions={
+                canInsert ? (
+                  <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}
+                  >
+                    Registrar usuario
+                  </MDButton>
+                ) : null
+              }
+
+              pagination={{
+                manual: true,
+                page, pageSize,
+                total, onPageChange: setPage,
+              }}
+              showTotalEntries
+            />
+
+          </MDBox>
+        </Card>
+        <Dialog open={openCreate && canInsert} onClose={() => setOpenCreate(false)}>
+          <MDBox p={3}>
+            <UserCreateModal
+              onSave={(data) => {
+                handleCreateUser(data);
+              }}
+              onCancel={() => setOpenCreate(false)}
+            />
+          </MDBox>
+        </Dialog>
+        <Dialog open={Boolean(selectedUser) && canUpdate} onClose={() => setSelectedUser(null)}>
+
+          <MDBox p={3}>
+            <UserEditModal
+              onSave={handleUpdateUser}
+              onCancel={() => { setSelectedUser(null) }}
+              user={selectedUser} />
+          </MDBox>
+        </Dialog>
       </MDBox>
+    </MDBox>
   );
 }
 

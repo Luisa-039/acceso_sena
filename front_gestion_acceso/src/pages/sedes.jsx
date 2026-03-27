@@ -117,6 +117,7 @@ function Sedes() {
 
       if (response) {
         alerts.success("Sede actualizada con exito");
+        fetchSedes();
         setSelectedSede(null);
       }
 

@@ -14,7 +14,7 @@ import MDBox from "@/components/MDBox";
 import MDTypography from "@/components/MDTypography";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { apiFetch } from "@/services/api";
-import { useAuth } from "@/context/authContext";
+import { useSede } from "@/context/sedeContext";
 
 ChartJS.register(
   CategoryScale,
@@ -36,7 +36,7 @@ function getErrorMessage(err) {
 }
 
 function DashboardPage() {
-  const { user, idRol } = useAuth();
+  const { effectiveSedeId, selectedSedeName } = useSede();
   const now = new Date();
   const consumiblesChartRef = useRef(null);
   const ingresosChartRef = useRef(null);
@@ -46,8 +46,6 @@ function DashboardPage() {
   const [printPayload, setPrintPayload] = useState({ title: "", image: "", details: "" });
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [sedes, setSedes] = useState([]);
-  const [selectedSedeId, setSelectedSedeId] = useState(null);
   const [consumiblesSummary, setConsumiblesSummary] = useState({
     total: 0,
     activos: 0,
@@ -75,65 +73,6 @@ function DashboardPage() {
     const currentYear = now.getFullYear();
     return [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
   }, [now]);
-
-  const canSelectSede = useMemo(() => [1, 2].includes(Number(idRol)), [idRol]);
-
-  useEffect(() => {
-    if (!canSelectSede) {
-      setSedes([]);
-      setSelectedSedeId(user?.sede_id || null);
-      return;
-    }
-
-    let isMounted = true;
-    async function loadSedes() {
-      try {
-        const data = await apiFetch("sede/all/sedes");
-        if (!isMounted) return;
-
-        const sedesList = Array.isArray(data) ? data : data?.sedes || [];
-        setSedes(sedesList);
-
-        const defaultSede = user?.sede_id || sedesList[0]?.id_sede || null;
-        setSelectedSedeId(defaultSede);
-      } catch {
-        if (!isMounted) return;
-        setSedes([]);
-        setSelectedSedeId(user?.sede_id || null);
-      }
-    }
-
-    loadSedes();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [canSelectSede, user?.sede_id]);
-
-  const effectiveSedeId = canSelectSede ? selectedSedeId : user?.sede_id;
-  const selectedSedeName = useMemo(() => {
-    if (!effectiveSedeId) return "No definida";
-    const found = (sedes || []).find((s) => s.id_sede === Number(effectiveSedeId));
-    return found?.nombre || user?.nombre || "No definida";
-  }, [effectiveSedeId, sedes, user?.nombre]);
-
-  const navbarSedeSelector = canSelectSede ? (
-    <FormControl size="small" sx={{ minWidth: 260 }}>
-      <InputLabel id="navbar-sede-select-label">Cambiar sede</InputLabel>
-      <Select
-        labelId="navbar-sede-select-label"
-        value={selectedSedeId || ""}
-        label="Cambiar sede"
-        onChange={(e) => setSelectedSedeId(Number(e.target.value))}
-      >
-        {(sedes || []).map((sede) => (
-          <MenuItem key={sede.id_sede} value={sede.id_sede}>
-            {sede.nombre}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
 
   useEffect(() => {
     let isMounted = true;
@@ -291,7 +230,7 @@ function DashboardPage() {
 
   return (
     <MDBox sx={{ pb: 3, pt: 8 }}>
-      <DashboardNavbar title={`Sede ${selectedSedeName}`} middleContent={navbarSedeSelector} />
+      <DashboardNavbar />
 
       <MDBox
         ref={printContainerRef}

@@ -71,7 +71,6 @@ function type_mov() {
 
       setOpenCreate(false);
       fetchType_mov();
-
       alerts.success("Tipo de movimiento creado con éxito");
 
     } catch (error) {

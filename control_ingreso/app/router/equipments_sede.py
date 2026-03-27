@@ -25,6 +25,15 @@ def create_equipo(
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
         
+        if Equipo.serial:
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(db, Equipo.serial)
+            if existing_equipo:
+                raise HTTPException(status_code=400, detail="Ya existe un equipo con ese número de serial")
+        if Equipo.codigo_barras_equipo:
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(db, Equipo.codigo_barras_equipo)
+            if existing_equipo:
+                raise HTTPException(status_code=400, detail="Ya existe un equipo con ese código de barras")
+            
         crud_equipments_sede.create_equipment_sede(db, Equipo)
         return {"message": "Equipo registrado correctamente"}
     except SQLAlchemyError as e:
@@ -94,6 +103,15 @@ def update_equip_by_id(id_equip: int,
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
+        if equip.serial:
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(db, equip.serial)
+            if existing_equipo:
+                raise HTTPException(status_code=400, detail="Ya existe un equipo con ese número de serial")
+        if equip.codigo_barras_equipo:
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(db, equip.codigo_barras_equipo)
+            if existing_equipo:
+                raise HTTPException(status_code=400, detail="Ya existe un equipo con ese código de barras")
+            
         success = crud_equipments_sede.update_equip_sede_by_id(db, id_equip, equip)
         if not success:
             raise HTTPException(status_code=400, detail="No se pudo actualizar el equipo")
@@ -135,6 +153,15 @@ def update_equip(codigo_barras_equip: str,
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
+        if equip.serial:
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(db, equip.serial)
+            if existing_equipo:
+                raise HTTPException(status_code=400, detail="Ya existe un equipo con ese número de serial")
+        if equip.codigo_barras_equipo:
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(db, equip.codigo_barras_equipo)
+            if existing_equipo:
+                raise HTTPException(status_code=400, detail="Ya existe un equipo con ese código de barras")
+
         success = crud_equipments_sede.update_equip_sede_by_cod_barras(db, codigo_barras_equip, equip)
         if not success:
             raise HTTPException(status_code=400, detail="No se pudo actualizar el equipo")

@@ -67,9 +67,7 @@ function Areas() {
 
       setOpenCreate(false);
       fetchAreas();
-
       alerts.success("área creada con éxito");
-
     } catch (error) {
       {
         alerts.error("Error al crear el área");

@@ -33,6 +33,18 @@ function Equips_sede() {
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
 
+  const Validar_Equipo_by_serial = (error) => {
+    const detail = String(error?.detail || "").toLowerCase();
+
+    if (detail.includes("número de serial") || detail.includes("numero de serial") || detail.includes("serial")) {
+      return "Ya existe un equipo con ese número de serial";
+    } else if (detail.includes("código de barras") || detail.includes("codigo de barras") || detail.includes("código barras") || detail.includes("codigo barras")) {
+      return "Ya existe un equipo con ese código de barras";
+    }
+
+    return null;
+  };
+
   const fetchEquips_sedes = async () => {
     const params = new URLSearchParams({
       page: String(page + 1),
@@ -129,7 +141,12 @@ function Equips_sede() {
       alerts.success("Equipo creado con éxito");
 
     } catch (error) {
-      alerts.error("Error al crear el equipo");
+      const duplicateMessage = Validar_Equipo_by_serial(error);
+      if (duplicateMessage) {
+        alerts.warning(duplicateMessage);
+      } else {
+        alerts.error("Error al crear el equipo");
+      }
     }
   }
 
@@ -160,8 +177,12 @@ function Equips_sede() {
       }
 
     } catch (error) {
-      console.error(error);
-      alerts.error("Error al actualizar el equipo");
+      const duplicateMessage = Validar_Equipo_by_serial(error);
+      if (duplicateMessage) {
+        alerts.warning(duplicateMessage);
+      } else {
+        alerts.error("Error al actualizar el equipo");
+      }
     }
   }
 

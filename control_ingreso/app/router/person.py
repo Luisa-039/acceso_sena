@@ -22,9 +22,15 @@ def create_person(
         id_rol = user_token.rol_id       
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
-        crud_person.create_person(db, person)
+        
+        if person.documento:
+            existing_person = crud_person.get_person_by_document_number(db, person.documento)
+            if existing_person:
+                raise HTTPException(status_code=400, detail="Ya existe una persona con ese número de documento")
+            
+            crud_person.create_person(db, person)
+
         return {"message": "Persona creada correctamente"}
-    
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -73,6 +79,11 @@ def update_person_by_document(
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
+        if person.documento:
+            existing_person = crud_person.get_person_by_document_number(db, person.documento)
+            if existing_person:
+                raise HTTPException(status_code=400, detail="Ya existe una persona con ese número de documento")
+            
         success = crud_person.update_person_by_document(db, document, person)
         if not success:
             raise HTTPException(status_code=400, detail="No se pudo actualizar la persona")

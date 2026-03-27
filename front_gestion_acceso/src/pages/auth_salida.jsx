@@ -123,7 +123,7 @@ function Auth_salida() {
   }
 
   //Función para actualizar equipo
-  async function handleUpdadeAuth_salida(data) {
+  async function handleUpdateAuth_salida(data) {
     if (!canUpdate) return;
 
     try {
@@ -143,8 +143,8 @@ function Auth_salida() {
       );
 
       if (response) {
-        fetchAuth_salida();
         alerts.success("Equipo actualizado con exito");
+        fetchAuth_salida();
         setSelectedAuth_salida(null);
       }
 
@@ -290,7 +290,7 @@ function Auth_salida() {
         <Dialog open={Boolean(selectedAuth_salida) && canUpdate} onClose={() => setSelectedAuth_salida(null)}>
           <MDBox p={3}>
             <Auth_salidaEditModal
-              onSave={handleUpdadeAuth_salida}
+              onSave={handleUpdateAuth_salida}
               onCancel={() => { setSelectedAuth_salida(null) }}
               auth_salida={selectedAuth_salida}
             />

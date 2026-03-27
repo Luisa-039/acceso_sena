@@ -7,7 +7,11 @@ import PropTypes from "prop-types";
 // @material-ui core components
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import Select from "@mui/material/Select";
 
 // Material Dashboard 2 React components
 import MDBox from "@/components/MDBox";
@@ -26,6 +30,7 @@ import {
   setTransparentNavbar,
 } from "@/context";
 import { useAuth } from "@/context/authContext";
+import { useSede } from "@/context/sedeContext";
 
 
 function DashboardNavbar({ absolute = "false", light = "false", title = "", middleContent = null }) {
@@ -33,6 +38,7 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
   const [controller, dispatch] = useMaterialUIController();
   const { transparentNavbar, fixedNavbar, darkMode } = controller;
   const { user, logoutUser } = useAuth();
+  const { selectedSedeName, canSelectSede, sedes, selectedSedeId, setSelectedSedeId } = useSede();
 
   const currentUser = user;
   const userName = currentUser?.nombre_usuario || "Usuario";
@@ -69,6 +75,26 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
     logoutUser();
     window.location.href = "/login";
   };
+
+  const navbarTitle = title || `Sede ${selectedSedeName}`;
+
+  const defaultMiddleContent = canSelectSede ? (
+    <FormControl size="small" sx={{ minWidth: 260 }}>
+      <InputLabel id="navbar-sede-select-label">Cambiar sede</InputLabel>
+      <Select
+        labelId="navbar-sede-select-label"
+        value={selectedSedeId || ""}
+        label="Cambiar sede"
+        onChange={(e) => setSelectedSedeId(Number(e.target.value))}
+      >
+        {(sedes || []).map((sede) => (
+          <MenuItem key={sede.id_sede} value={sede.id_sede}>
+            {sede.nombre}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  ) : null;
 
 
   useEffect(() => {
@@ -116,9 +142,9 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
 
         {/* LEFT */}
         <MDBox minWidth={0}>
-          {title ? (
+          {navbarTitle ? (
             <MDBox component="span" sx={{ fontSize: "2rem", fontWeight: 700, color: "#244673" }}>
-              {title}
+              {navbarTitle}
             </MDBox>
           ) : null}
         </MDBox>
@@ -131,7 +157,7 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
           minWidth={{ xs: "100%", md: "auto" }}
           order={{ xs: 3, md: 2 }}
         >
-          {middleContent}
+          {middleContent ?? defaultMiddleContent}
         </MDBox>
 
         {/* RIGHT */}

@@ -120,6 +120,7 @@ function Inv_consumible() {
 
       if (response) {
         alerts.success("Consumible actualizado con exito");
+        fetchInv_consumibles();
         setSelectedInv_consumible(null);
       }
 

@@ -115,6 +115,7 @@ function Equips_ext() {
 
       if (response) {
         alerts.success("Equipo actualizado con exito");
+        fetchEquips_exts();
         setSelectedEquips_ext(null);
       }
 

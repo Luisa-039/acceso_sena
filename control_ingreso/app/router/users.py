@@ -26,7 +26,17 @@ def create_user(
         
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
-
+        
+        if user.email:
+            existing_user = crud_users.get_user_by_email(db, user.email)
+            if existing_user:
+                raise HTTPException(status_code=400, detail="Ya existe un usuario con ese correo electrónico")
+        
+        if user.documento:
+            existing_user = crud_users.get_user_by_document_number(db, user.documento)
+            if existing_user:
+                raise HTTPException(status_code=400, detail="Ya existe un usuario con ese número de documento")
+            
         crud_users.create_user(db, user)
         return {"message": "Usuario creado correctamente"}
     

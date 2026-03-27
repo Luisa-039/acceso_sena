@@ -65,7 +65,7 @@ function PersonCreateModal({ onSave, onCancel }) {
 
       <MDBox mb={2}>
         <MDInput
-          label="Nombre"
+          label="Nombre completo"
           name="nombre_completo"
           value={form.nombre_completo || ""}
           onChange={handleChange}

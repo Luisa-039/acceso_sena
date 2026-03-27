@@ -29,6 +29,16 @@ function Persons() {
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
 
+  const resolveDuplicatePersonMessage = (error) => {
+    const detail = String(error?.detail || "").toLowerCase();
+
+    if (detail.includes("número de documento") || detail.includes("numero de documento") || detail.includes("documento")) {
+      return "Ya existe una persona con ese número de documento";
+    }
+
+    return null;
+  };
+
 
   const fetchPersons = async () => {
     const params = new URLSearchParams({
@@ -80,17 +90,18 @@ function Persons() {
     if (!canInsert) return;
 
     try {
-      apiFetch(`person/crear-persona`, {
+      await apiFetch(`person/crear-persona`, {
         method: "POST",
         body: data,
       });
 
+      alerts.success("Persona creado con éxito");
       fetchPersons();
       setOpenCreate(false);
-      alerts.success("Persona creado con éxito");
     } catch (error) {
-      if (error.status === 400) {
-        alerts.warning("Este correo ya está registrado con otra persona");
+      const duplicateMessage = resolveDuplicatePersonMessage(error);
+      if (duplicateMessage) {
+        alerts.warning(duplicateMessage);
       } else {
         alerts.error("Error al crear el persona");
       }
@@ -119,12 +130,19 @@ function Persons() {
 
       if (response) {
         alerts.success("Persona actualizada con exito");
+        fetchPersons();
         setSelectedPerson(null);
       }
 
     } catch (error) {
-      console.error(error);
-      alerts.error("Error al actualizar la persona");
+      const duplicateMessage = resolveDuplicatePersonMessage(error);
+
+      if (duplicateMessage) {
+        alerts.warning(duplicateMessage);
+      } else {
+        console.error(error);
+        alerts.error("Error al actualizar la persona");
+      }
     }
   }
 
