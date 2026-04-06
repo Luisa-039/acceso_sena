@@ -24,6 +24,7 @@ import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
 import Encuestas from "@/pages/encuestas";
 import Consumibles from "@/pages/inv_conumibles";
+import Access_register from "@/pages/access";
 import AccordionPage from "@/pages/accordionPage";
 
 function App() {
@@ -59,6 +60,7 @@ function App() {
         <Route path="areas" element={<Areas />} />
         <Route path="encuestas" element={<Encuestas />} />
         <Route path="consumibles" element={<Consumibles />} />
+        <Route path="registro-access" element={<Access_register />} />
         <Route path="accordion" element={<AccordionPage />} />
       </Route>
     </Routes>

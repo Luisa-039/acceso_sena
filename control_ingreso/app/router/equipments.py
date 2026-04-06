@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -20,7 +20,7 @@ def create_equipo(
     categoria_id: int = Form(...),
     serial: str = Form(...),
     marca_modelo: str = Form(...),
-    descripcion: str = Form(...),
+    descripcion: Optional[str] = Form(None),
     codigo_barras_inv: str = Form(...),
     fecha_registro: str = Form(...),
     estado: bool = Form(...),
@@ -48,7 +48,7 @@ def create_equipo(
             categoria_id=categoria_id,
             serial=serial,
             marca_modelo=marca_modelo,
-            descripcion=descripcion,
+            descripcion=descripcion.strip() if descripcion and descripcion.strip() else None,
             codigo_barras_inv=codigo_barras_inv,
             fecha_registro=fecha_registro,
             estado=estado,

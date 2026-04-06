@@ -8,7 +8,7 @@ import { MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 
-function EquipoCreateModal({ onSave, onCancel }) {
+function EquipoCreateModal({ onSave, onCancel, includePersona = true }) {
 
   const [propietario, setPropietario] = useState([]);
   const [categoria, setCategoria] = useState([]);
@@ -45,6 +45,8 @@ function EquipoCreateModal({ onSave, onCancel }) {
   }, []);
 
   useEffect(() => {
+    if (!includePersona) return;
+
     apiFetch("person/all/person")
       .then(data => {
 
@@ -56,7 +58,7 @@ function EquipoCreateModal({ onSave, onCancel }) {
         }
       })
       .catch(err => console.error(err));
-  }, []);
+  }, [includePersona]);
 
   const [preview, setPreview] = useState(null);
 
@@ -123,11 +125,15 @@ function EquipoCreateModal({ onSave, onCancel }) {
 
         const data = new FormData();
 
-        data.append("persona_id", Number(form.persona_id));
+        if (includePersona) {
+          data.append("persona_id", Number(form.persona_id));
+        }
         data.append("categoria_id", form.categoria_id);
         data.append("serial", form.serial);
         data.append("marca_modelo", form.marca_modelo);
-        data.append("descripcion", form.descripcion);
+        if (form.descripcion?.trim()) {
+          data.append("descripcion", form.descripcion.trim());
+        }
         data.append("codigo_barras_inv", form.codigo_barras_inv);
         data.append("fecha_registro", fecha_actual);
         data.append("estado", true);
@@ -148,29 +154,31 @@ function EquipoCreateModal({ onSave, onCancel }) {
 
         {/* FORMULARIO */}
         <MDBox item xs={12} md={6}>
-          <MDBox mb={2}>
-            <Autocomplete
-              options={Array.isArray(propietario) ? propietario : []}
-              getOptionLabel={(option) => option.nombre_completo || ""}
-              value={
-                propietario.find((p) => p.id_persona === form.persona_id) || null
-              }
-              onChange={(event, newValue) => {
-                setForm({
-                  ...form,
-                  persona_id: newValue ? newValue.id_persona : "",
-                });
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Propietario"
-                  variant="outlined"
-                  fullWidth
-                />
-              )}
-            />
-          </MDBox>
+          {includePersona && (
+            <MDBox mb={2}>
+              <Autocomplete
+                options={Array.isArray(propietario) ? propietario : []}
+                getOptionLabel={(option) => option.nombre_completo || ""}
+                value={
+                  propietario.find((p) => p.id_persona === form.persona_id) || null
+                }
+                onChange={(event, newValue) => {
+                  setForm({
+                    ...form,
+                    persona_id: newValue ? newValue.id_persona : "",
+                  });
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Propietario"
+                    variant="outlined"
+                    fullWidth
+                  />
+                )}
+              />
+            </MDBox>
+          )}
 
           <MDBox mb={2}>
             <FormControl size="md">

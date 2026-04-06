@@ -6,9 +6,9 @@ from typing import List, Optional
 # Definición de modelos Pydantic para equipos
 class EquipoBase(BaseModel):
     serial: Optional[str] = None
-    descripcion: str
+    descripcion: Optional[str] = None
     categoria_id: int
-    foto_path: Optional[str]
+    foto_path: Optional[str] = None
     marca_modelo: str
     persona_id: int
     fecha_registro: datetime

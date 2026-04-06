@@ -30,6 +30,8 @@ class AccessOut(AccessBase):
     nombre_area: Optional[str] = None
     nombre_sede: str
     nombre_completo: str
+    serial: Optional[str] = None
+    marca_modelo: Optional[str] = None
     
 class PaginatedAccess(BaseModel):
     page: int

@@ -20,7 +20,7 @@ import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
 import Encuestas from "./pages/encuestas";
 import Consumibles from "@/pages/inv_conumibles";
-import Access_register from "@/pages/registro_access";
+import Access_register from "@/pages/access";
 import AccordionPage from "@/pages/accordionPage";
 
 

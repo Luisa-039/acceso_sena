@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException
 import logging
 import re
+from datetime import datetime
 from datetime import date, timedelta
 
 from app.schemas.access import AccessCreate, PaginatedAccess
@@ -222,23 +223,116 @@ def asociar_equipo_by_serial(db:Session, serial_equip:str):
         logger.error(f"Error al asociar el equipo: {e}")
         raise Exception("Error de base de datos al asociar el equipo")
 
-#registrar salida de la persona sin equipo por scan
-def check_out_person(db:Session, cod_barras:str):
+# registrar ingreso directamente por código de barras del equipo
+def registro_acceso_equipo(db: Session, cod_barras_equip: str, area_id_s: int, access: AccessCreate, usuario_id: int) -> str:
     try:
-        numero_documento = _extract_document_number(cod_barras)
+        if not area_id_s or area_id_s <= 0:
+            logger.warning("Ingreso bloqueado. Debe especificar el area de visita")
+            return "area_required"
+
+        equipo_query = text("""
+            SELECT id_equipo, persona_id, codigo_barras_inv
+            FROM equipos_externos
+            WHERE codigo_barras_inv = :cod_barras_equip
+        """)
+        equipo_result = db.execute(
+            equipo_query, {"cod_barras_equip": cod_barras_equip}
+        ).mappings().first()
+
+        if not equipo_result:
+            logger.warning("Equipo no encontrado en el sistema")
+            return "equipment_not_found"
+
+        validar_activo_query = text("""
+            SELECT id_acceso
+            FROM registro_accesos
+            WHERE persona_id = :persona_id
+              AND equipo_id = :id_equipo
+              AND fecha_salida IS NULL
+            ORDER BY fecha_entrada DESC
+            LIMIT 1
+        """)
+
+        acceso_activo = db.execute(
+            validar_activo_query,
+            {"persona_id": equipo_result["persona_id"], "id_equipo": equipo_result["id_equipo"]},
+        ).mappings().first()
+
+        if acceso_activo:
+            logger.warning(
+                f"Ingreso bloqueado. Equipo con codigo {cod_barras_equip} ya tiene acceso activo"
+            )
+            return "active_access_exists"
+
+        area_query = text("""
+            SELECT id_area
+            FROM areas
+            WHERE id_area = :id_area_s
+        """)
+        area_result = db.execute(area_query, {"id_area_s": area_id_s}).mappings().first()
+
+        if not area_result:
+            logger.warning(f"Area de visita no encontrada: {area_id_s}")
+            return "area_not_found"
+
+        sede_query = text("""
+            SELECT sede_id
+            FROM usuarios
+            WHERE id_usuario = :id_user
+        """)
+        sede_result = db.execute(sede_query, {"id_user": usuario_id}).mappings().first()
+
+        access_query = text("""
+            INSERT INTO registro_accesos(
+                sede_id, persona_id, equipo_id,
+                usuario_registro_id, area_id,
+                tipo_movimiento, fecha_entrada
+            )
+            VALUES(
+                :sede_id, :persona_id, :equipo_id,
+                :usuario_registro_id, :area_id,
+                :tipo_movimiento, :fecha_entrada
+            )
+        """)
+
+        params = {
+            **access.model_dump(),
+            "sede_id": sede_result["sede_id"],
+            "persona_id": equipo_result["persona_id"],
+            "equipo_id": equipo_result["id_equipo"],
+            "usuario_registro_id": usuario_id,
+            "area_id": area_result["id_area"],
+            "tipo_movimiento": True,
+        }
+
+        db.execute(access_query, params)
+        db.commit()
+
+        return "ok"
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Error al realizar el registro de acceso por equipo: {e}")
+        raise Exception("Error de base de datos al realizar el registro de acceso por equipo")
+
+#registrar salida de la persona sin equipo por scan
+def check_out_person(db:Session, cod_barras_person:str, fecha_salida=None):
+    try:
+        fecha_salida = fecha_salida or datetime.now()
+        numero_documento = _extract_document_number(cod_barras_person)
 
         registro_activo = text("""
                                 SELECT r_a.id_acceso, p.documento 
                                 FROM registro_accesos as r_a
                                 INNER JOIN personas as p ON p.id_persona = r_a.persona_id
-                                WHERE p.documento = :cod_barras
+                                WHERE p.documento = :cod_barras_person
                                 AND fecha_salida IS NULL
                                 ORDER BY fecha_entrada DESC
                                 LIMIT 1;
                                """)
         
         result_registro =db.execute(
-            registro_activo, {"cod_barras": numero_documento }
+            registro_activo, {"cod_barras_person": numero_documento }
         ).mappings().first()
         
         if not result_registro:
@@ -246,11 +340,17 @@ def check_out_person(db:Session, cod_barras:str):
         
         sentencia = text("""
             UPDATE registro_accesos
-            SET fecha_salida = NOW()
+            SET fecha_salida = :fecha_salida
             WHERE id_acceso = :access_id
         """)
         
-        result = db.execute(sentencia, {"access_id": result_registro["id_acceso"]})
+        result = db.execute(
+            sentencia,
+            {
+                "access_id": result_registro["id_acceso"],
+                "fecha_salida": fecha_salida,
+            },
+        )
         db.commit()
         
         return result.rowcount > 0
@@ -261,8 +361,9 @@ def check_out_person(db:Session, cod_barras:str):
             raise Exception("Error de base de datos al realizar el registro de acceso") 
 
 #registrar salida de la persona por el código de barras del equipo 
-def check_out_equip(db:Session, cod_barras_equip:str):
+def check_out_equip(db:Session, cod_barras_equip:str, fecha_salida=None):
     try:
+        fecha_salida = fecha_salida or datetime.now()
         datos_equip_query = text("""
                                  SELECT id_equipo, persona_id
                                  FROM equipos_externos
@@ -295,16 +396,22 @@ def check_out_equip(db:Session, cod_barras_equip:str):
         ).mappings().first()
         
         if not result_validacion:
-            return {"El equipo no está asociado con esta persona"}
+            return "no_active_access"
         
         
         sentencia = text("""
             UPDATE registro_accesos
-            SET fecha_salida = NOW()
+            SET fecha_salida = :fecha_salida
             WHERE id_acceso = :access_id
         """)
         
-        result = db.execute(sentencia, {"access_id": result_validacion["id_acceso"]})
+        result = db.execute(
+            sentencia,
+            {
+                "access_id": result_validacion["id_acceso"],
+                "fecha_salida": fecha_salida,
+            },
+        )
         db.commit()
         
         return result.rowcount > 0
@@ -315,8 +422,9 @@ def check_out_equip(db:Session, cod_barras_equip:str):
             raise Exception("Error de base de datos al realizar el registro de salida") 
 
 #registrar salida por serial, si la pistola falla
-def check_out_equip_serial(db:Session, serial_eq:str):
+def check_out_equip_serial(db:Session, serial_eq:str, fecha_salida=None):
     try:
+        fecha_salida = fecha_salida or datetime.now()
         datos_equip_query = text("""
                                  SELECT id_equipo, persona_id
                                  FROM equipos_externos
@@ -349,16 +457,22 @@ def check_out_equip_serial(db:Session, serial_eq:str):
         ).mappings().first()
         
         if not result_validacion:
-            return {"El equipo no está asociado con esta persona"}
+            return "no_active_access"
         
         
         sentencia = text("""
             UPDATE registro_accesos
-            SET fecha_salida = NOW()
+            SET fecha_salida = :fecha_salida
             WHERE id_acceso = :access_id
         """)
         
-        result = db.execute(sentencia, {"access_id": result_validacion["id_acceso"]})
+        result = db.execute(
+            sentencia,
+            {
+                "access_id": result_validacion["id_acceso"],
+                "fecha_salida": fecha_salida,
+            },
+        )
         db.commit()
         
         return result.rowcount > 0
@@ -380,7 +494,7 @@ def get_access_by_id(db:Session, id_acceso_p:int):
                             e.marca_modelo, e.serial
                             FROM registro_accesos AS ra
                             INNER JOIN personas as p ON p.id_persona = ra.persona_id
-                            INNER JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
+                            LEFT JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
                             LEFT JOIN areas as ar ON ar.id_area = ra.area_id
                             LEFT JOIN sedes as s ON s.id_sede = ra.sede_id
                             WHERE id_acceso = :id_ingreso  
@@ -400,7 +514,7 @@ def get_all_access(db:Session):
                                 e.marca_modelo, e.serial
                                 FROM registro_accesos AS ra
                                 INNER JOIN personas as p ON p.id_persona = ra.persona_id
-                                INNER JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
+                                LEFT JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
                                 LEFT JOIN areas as ar ON ar.id_area = ra.area_id
                                 LEFT JOIN sedes as s ON s.id_sede = ra.sede_id
                                 ORDER BY fecha_entrada DESC
@@ -431,10 +545,11 @@ def get_all_access_pag(db: Session, skip:int = 0, limit = 10):
                             ar.nombre_area, s.nombre AS nombre_sede, p.nombre_completo,
                             e.marca_modelo, e.serial
                             FROM registro_accesos AS ra
-                            INNER JOIN personas as p ON p.id_persona = ra.persona_id
-                            INNER JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
+                            LEFT JOIN personas as p ON p.id_persona = ra.persona_id
+                            LEFT JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
                             LEFT JOIN areas as ar ON ar.id_area = ra.area_id
                             LEFT JOIN sedes as s ON s.id_sede = ra.sede_id
+                            ORDER BY fecha_entrada DESC
                             LIMIT :limit OFFSET :skip
                         """)
         access_list = db.execute(data_query,{"skip": skip, "limit": limit}).mappings().all()

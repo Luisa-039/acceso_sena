@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
@@ -61,6 +62,58 @@ def create_center(
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+#Crear el registro de ingreso directamente por codigo de barras del equipo
+@router.post("/crear-by_equipo-scan", status_code=status.HTTP_201_CREATED)
+def create_center_by_equipo(
+    cod_barras_eq: str,
+    registro_acc: AccessCreate,
+    area_id: int,
+    db: Session = Depends(get_db),
+    user_token: UserOut = Depends(get_current_user)
+):
+    try:
+        id_rol = user_token.rol_id
+        if not verify_permissions(db, id_rol, modulo, 'insertar'):
+            raise HTTPException(status_code=401, detail='Usuario no autorizado')
+
+        resultado = crud_access.registro_acceso_equipo(
+            db=db,
+            cod_barras_equip=cod_barras_eq,
+            access=registro_acc,
+            area_id_s=area_id,
+            usuario_id=id_rol,
+        )
+
+        if resultado == "equipment_not_found":
+            raise HTTPException(status_code=404, detail="Equipo no encontrado en el sistema")
+
+        if resultado == "active_access_exists":
+            raise HTTPException(
+                status_code=409,
+                detail="El equipo ya tiene un ingreso activo. Debe registrar salida antes de un nuevo ingreso.",
+            )
+
+        if resultado == "area_required":
+            raise HTTPException(
+                status_code=422,
+                detail="Debe enviar el area de visita para registrar el ingreso.",
+            )
+
+        if resultado == "area_not_found":
+            raise HTTPException(
+                status_code=404,
+                detail="El area de visita no existe en el sistema.",
+            )
+
+        if resultado != "ok":
+            raise HTTPException(status_code=400, detail="No fue posible registrar el ingreso")
+
+        return {"message": "registro creado correctamente"}
+
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 #Asociar el equipo que trae la persona al registro creado anteriormente
 @router.post("/asociar_equipo_scan", status_code=status.HTTP_201_CREATED)
 def asoc_equip(cod_barras_eq: str,
@@ -85,6 +138,7 @@ def asoc_equip(cod_barras_eq: str,
 @router.put("/salida_person_scan")
 def check_out_person(
     cod_barras_person: str,
+    fecha_salida: datetime | None = None,
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -93,7 +147,7 @@ def check_out_person(
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
         
-        resultado = crud_access.check_out_person(db, cod_barras_person)
+        resultado = crud_access.check_out_person(db, cod_barras_person, fecha_salida)
         
         if resultado:
             return {"Registro de salida almacenado correctamente"}
@@ -107,6 +161,7 @@ def check_out_person(
 @router.put("/salida_equip_scan")
 def check_out_equipo(
     cod_barras_equipo: str,
+    fecha_salida: datetime | None = None,
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -115,7 +170,13 @@ def check_out_equipo(
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
         
-        resultado = crud_access.check_out_equip(db, cod_barras_equipo)
+        resultado = crud_access.check_out_equip(db, cod_barras_equipo, fecha_salida)
+        
+        if resultado == "no_active_access":
+            raise HTTPException(
+                status_code=409,
+                detail="No existe un ingreso activo para ese equipo."
+            )
         
         if resultado:
             return {"Registro de salida almacenado correctamente"}
@@ -185,6 +246,7 @@ def asoc_equip(serial: str,
 @router.put("/salida_equip_serial")
 def check_out_equipo_serial(
     serial_equipo: str,
+    fecha_salida: datetime | None = None,
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -193,7 +255,13 @@ def check_out_equipo_serial(
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
         
-        resultado = crud_access.check_out_equip(db, serial_equipo)
+        resultado = crud_access.check_out_equip_serial(db, serial_equipo, fecha_salida)
+
+        if resultado == "no_active_access":
+            raise HTTPException(
+                status_code=409,
+                detail="No existe un ingreso activo para ese equipo."
+            )
         
         if resultado:
             return {"Registro de salida almacenado correctamente"}
