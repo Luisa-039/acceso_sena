@@ -20,6 +20,7 @@ import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
 import Encuestas from "./pages/encuestas";
 import Consumibles from "@/pages/inv_conumibles";
+import Access_register from "@/pages/registro_access";
 import AccordionPage from "@/pages/accordionPage";
 
 
@@ -46,6 +47,7 @@ const routes = [
       { path: "categorias", element: <Categorias /> },
       { path: "areas", element: <Areas /> },
       { path: "encuestas", element: <Encuestas /> },
+      { path: "registro-access", element: <Access_register /> },
       { path: "accordion", element: <AccordionPage /> }
     ],
   },
@@ -62,6 +64,14 @@ const routes = [
     key: "accesos-menu",
     icon: "group",
     collapse: [
+      {
+        type: "collapse",
+        name: "Registro de accesos",
+        key: "access_register_group",
+        route: "registro-access",
+        idModulo: MODULOS.REGISTROS_ACCESO,
+        component: <Access_register />,
+      },
       {
         type: "collapse",
         name: "Personas",
