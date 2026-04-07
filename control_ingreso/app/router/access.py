@@ -23,14 +23,15 @@ def create_center(
     user_token: UserOut = Depends(get_current_user)
 ):
     try:
-        id_rol = user_token.rol_id             
+        id_rol = user_token.rol_id
+        id_usuario = user_token.id_usuario
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
         resultado = crud_access.registro_acceso(db=db,
                                                 cod_barras=cod_barras_p,
                                                 access=registro_acc,
                                                 area_id_s=area_id,
-                                                usuario_id = id_rol
+                                                usuario_id=id_usuario
                                                 )
 
         if resultado == "person_not_found":
@@ -74,6 +75,7 @@ def create_center_by_equipo(
 ):
     try:
         id_rol = user_token.rol_id
+        id_usuario = user_token.id_usuario
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail='Usuario no autorizado')
 
@@ -82,7 +84,7 @@ def create_center_by_equipo(
             cod_barras_equip=cod_barras_eq,
             access=registro_acc,
             area_id_s=area_id,
-            usuario_id=id_rol,
+            usuario_id=id_usuario,
         )
 
         if resultado == "equipment_not_found":
@@ -324,7 +326,7 @@ def get_dashboard_daily_entries(
 
         requested_sede_id = user_token.sede_id
         if sede_id is not None:
-            if user_token.rol_id not in (1, 2):
+            if user_token.rol_id not in (1, 2) and sede_id != user_token.sede_id:
                 raise HTTPException(status_code=403, detail="No autorizado para consultar otra sede")
             requested_sede_id = sede_id
 

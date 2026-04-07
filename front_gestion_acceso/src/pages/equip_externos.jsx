@@ -152,7 +152,7 @@ function Equips_ext() {
         </div>
       )
      },
-    { header: "Código barras", accessorKey: "cod_eq" },
+    { header: "Placa", accessorKey: "cod_eq" },
     {header: "Imagen", accessorKey: "foto_eq",
       cell: (info) => {
         const value = info.getValue();

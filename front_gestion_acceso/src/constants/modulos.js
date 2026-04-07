@@ -18,6 +18,6 @@ export const MODULOS = {
   CATEGORIAS:           16,
   AREAS:                17,
   ENCUESTAS:            18,
-  TIPO_MOVIMIENTOS:     19
-
+  TIPO_MOVIMIENTOS:     19,
+  VER_DASHBOARD:        20,
 };

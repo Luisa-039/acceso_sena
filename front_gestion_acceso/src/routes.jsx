@@ -56,6 +56,7 @@ const routes = [
     name: "Dashboard",
     key: "dashboard",
     route: "/dashboard",
+    idModulo: MODULOS.VER_DASHBOARD,
     component: <Dashboard />,
   },
   {
@@ -164,7 +165,7 @@ const routes = [
   },
   {
     type: "accordion",
-    name: "Gestión de equipos sede",
+    name: "Gestión de sede",
     key: "accordion-menu",
     collapse: [
       {
@@ -190,6 +191,14 @@ const routes = [
         route: "movements",
         idModulo: MODULOS.MOVIMIENTO_EQUIPOS,
         component: <Movements />,
+      },
+      {
+        type: "collapse",
+        name: "Inventario consumibles",
+        key: "consumibles",
+        route: "consumibles",
+        idModulo: MODULOS.INVENTARIO_CONSUMIBLES,
+        component: <Consumibles />,
       },
     ],
   },
@@ -241,14 +250,6 @@ const routes = [
       },      
     ]
   },
-  {
-        type: "collapse",
-        name: "Inventario consumibles",
-        key: "consumibles",
-        route: "consumibles",
-        idModulo: MODULOS.INVENTARIO_CONSUMIBLES,
-        component: <Consumibles />,
-      },
 
 ];
 

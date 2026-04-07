@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 from datetime import date, timedelta
 
-from app.schemas.access import AccessCreate, PaginatedAccess
+from app.schemas.access import AccessCreate
 
 logger = logging.getLogger(__name__)
 
@@ -87,15 +87,6 @@ def registro_acceso(db:Session, cod_barras:str, area_id_s: int, access: AccessCr
         if not area_result:
             logger.warning(f"Area de visita no encontrada: {area_id_s}")
             return "area_not_found"
-
-        sede_query = text("""
-        SELECT sede_id
-        FROM usuarios
-        WHERE id_usuario = :id_user
-        """)
-        sede_result = db.execute(
-            sede_query, {"id_user": usuario_id}
-        ).mappings().first()
             
         access_query = text("""
                             INSERT INTO registro_accesos(
@@ -111,7 +102,7 @@ def registro_acceso(db:Session, cod_barras:str, area_id_s: int, access: AccessCr
                             """)
         params = {
              **access.model_dump(),
-            "sede_id": sede_result["sede_id"],
+            "sede_id": 6,
             "persona_id": result_persona["id_persona"],
             "equipo_id": None,
             "usuario_registro_id": usuario_id,
@@ -540,7 +531,7 @@ def get_all_access_pag(db: Session, skip:int = 0, limit = 10):
 
         #2 Consultar usuarios
         data_query = text("""SELECT ra.id_acceso, ra.sede_id, ra.persona_id, 
-                            ra.equipo_id, ra.area_id, ra.usuario_registro_id,
+                            ra.equipo_id, e.foto_path, ra.area_id, ra.usuario_registro_id,
                             ra.tipo_movimiento, ra.fecha_entrada, ra.fecha_salida, 
                             ar.nombre_area, s.nombre AS nombre_sede, p.nombre_completo,
                             e.marca_modelo, e.serial

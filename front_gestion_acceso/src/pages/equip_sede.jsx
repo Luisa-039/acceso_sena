@@ -215,7 +215,7 @@ function Equips_sede() {
         </div>
       )
     },
-    { header: "Código barras", accessorKey: "cod_eq" },
+    { header: "Placa", accessorKey: "cod_eq" },
     { header: "Fecha registro", accessorKey: "fecha_registro" },
     {
       header: "Estado", accessorKey: "estado",

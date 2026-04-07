@@ -6,7 +6,7 @@ from typing import Optional, List
 class AccessBase(BaseModel): 
     sede_id: int 
     persona_id: int 
-    equipo_id: Optional[int] = None  
+    equipo_id: Optional[int] = None
     usuario_registro_id: int
     area_id: Optional[int] = 0
     tipo_movimiento: bool 
@@ -31,6 +31,7 @@ class AccessOut(AccessBase):
     nombre_sede: str
     nombre_completo: str
     serial: Optional[str] = None
+    foto_path: Optional[str] = None
     marca_modelo: Optional[str] = None
     
 class PaginatedAccess(BaseModel):

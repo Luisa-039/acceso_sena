@@ -11,7 +11,7 @@ function EncuestaCreateModal({ onSave, onCancel }) {
     acceso_id: "",
     calificacion: 0,
     observacion: "",
-    estado: false
+    estado: true
   });
 
 
@@ -82,7 +82,7 @@ function EncuestaCreateModal({ onSave, onCancel }) {
           Cancelar
         </MDButton>
 
-        <MDButton sx={{background: "green"}} variant="gradient" type="submit">
+        <MDButton color="success" variant="gradient" type="submit">
           Enviar
         </MDButton>
       </MDBox>

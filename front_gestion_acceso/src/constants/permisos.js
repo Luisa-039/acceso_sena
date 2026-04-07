@@ -19,6 +19,7 @@ export const PERMISOS_POR_ROL = {
     17: { insertar: true,  actualizar: true,  seleccionar: true,  borrar: true  }, // areas
     18: { insertar: true,  actualizar: true,  seleccionar: true,  borrar: true  }, // encuestas
     19: { insertar: true,  actualizar: true,  seleccionar: true,  borrar: true  }, // tipos movimientos
+    21: { insertar: true,  actualizar: true,  seleccionar: true,  borrar: true  }, // ver dashboard
   },
   2: { // Subdirector
     1: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // modulos
@@ -40,6 +41,7 @@ export const PERMISOS_POR_ROL = {
     17: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // areas
     18: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // encuestas
     19: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // tipos movimientos
+    21: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // ver dashboard
   },
   3: { // Dinamizador
     1: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // modulos
@@ -61,6 +63,8 @@ export const PERMISOS_POR_ROL = {
     17: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // areas
     18: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // encuestas
     19: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // tipos movimientos
+    19: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // tipos movimientos
+    21: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // ver dashboard
   },
   4: { // Guarda
     1: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // modulos
@@ -75,13 +79,14 @@ export const PERMISOS_POR_ROL = {
     10: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // equipos sede
     11: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // movimiento equipos
     12: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // autorizacion salida
-     13: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // ciudades
-     14: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // departamentos
-     15: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // inventario consumibles
-     16: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // categorias
-     17: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // areas
-     18: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // encuestas
-     19: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // tipos movimientos
+    13: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // ciudades
+    14: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // departamentos
+    15: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // inventario consumibles
+    16: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // categorias
+    17: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // areas
+    18: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // encuestas
+    19: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // tipos movimientos
+    21: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // ver dashboard
  },
  5: { // Técnico
     1: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // modulos
@@ -103,6 +108,7 @@ export const PERMISOS_POR_ROL = {
     17: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // areas
     18: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // encuestas
     19: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // tipos movimientos
+    21: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // ver dashboard
  },
  6: { // Líder TIC
    1: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // modulos
@@ -124,5 +130,6 @@ export const PERMISOS_POR_ROL = {
    17: { insertar: true,  actualizar: true,  seleccionar: true,  borrar: false  }, // areas
    18: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // encuestas
    19: { insertar: true,  actualizar: true,  seleccionar: true,  borrar: false  }, // tipos movimientos
+   21: { insertar: true,  actualizar: true,  seleccionar: true,  borrar: false  }, // ver dashboard
  },
 };

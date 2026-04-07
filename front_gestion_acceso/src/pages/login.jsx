@@ -31,10 +31,17 @@ function Login() {
       loginUser(data.access_token, data.user.rol_id, data.user);
       console.log(data);
 
-      //Navega hacia la página haciendo el cambio de ruta en un SPA de 
-      // React donde se muestra los usuarios
-      //Nota: Cambiar para que se muestre en un dashboard
-      navigate("/dashboard", {replace: true});
+      const rolId = Number(data.user?.rol_id);
+      const nombreRol = String(data.user?.nombre_rol || data.user?.rol || "").toLowerCase();
+      const esVigilante = rolId === 4 || nombreRol.includes("vigilante");
+
+      if (esVigilante) {
+        navigate("/dashboard/registro-access", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+      
+      
     } catch {
       await alerts.error("Credenciales incorrectas");
     }

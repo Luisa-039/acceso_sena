@@ -16,7 +16,7 @@ def create_user(db: Session, user: UserCreate) -> Optional[bool]:
         query = text("""
             INSERT INTO usuarios (
                 nombre_usuario, rol_id,
-                email, documento, telefono, pass_hash,sede_id,
+                email, documento, telefono, pass_hash, sede_id,
                 estado
             ) VALUES (
                 :nombre_usuario, :rol_id,

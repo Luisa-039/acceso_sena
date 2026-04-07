@@ -14,20 +14,21 @@ const swalTheme = Swal.mixin({
 });
 
 export const alerts = {
-  success(title = "Operacion exitosa", text = "") {
+  success(title = "Operacion exitosa", text = "", timer = 1800) {
     return swalTheme.fire({
       icon: "success",
-      iconColor: "#20760f",
+      iconColor: "success",
       title,
       text,
-      confirmButtonText: "Aceptar",
+      showConfirmButton: false,
+      timer,
     });
   },
 
   error(title = "Ha ocurrido un error", text = "") {
     return swalTheme.fire({
       icon: "error",
-      iconColor: "#d30808",
+      iconColor: "#FDC300",
       title,
       text,
       confirmButtonText: "Aceptar",

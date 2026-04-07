@@ -3,7 +3,7 @@
 
 // @mui material components
 import Card from "@mui/material/Card";
-import Switch from "@mui/material/Switch";
+// import Switch from "@mui/material/Switch";
 // import Grid from "@mui/material/Grid";
 // import MuiLink from "@mui/material/Link";
 
@@ -29,7 +29,7 @@ function Basic({email,
   return (
     <BasicLayout image={bgImage}>
       <Card pb={5} sx={{
-        background: "#38a900e0",
+        background: "#4d9b26e0",
         color: "green",
         marginBottom: 2
       }}>

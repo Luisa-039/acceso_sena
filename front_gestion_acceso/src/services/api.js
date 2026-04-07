@@ -33,21 +33,34 @@ export async function apiFetch(endpoint, options = {}) {
 
   //validación de errores 
   if (!response.ok) {
-
-    // const errorData = await response.json();
-
-    // console.log("STATUS:", response.status);
-    // console.log("ERROR BACKEND:", errorData);
-
-
-    //si es 401, elimina el token para volver a intentar el acceso
-    if (response.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+    let errorData = {};
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = { detail: "Error en la solicitud" };
     }
-    //Muestra el mensaje de error
-    const error = await response.json();
-    throw error;
+
+    // Solo cerrar sesion cuando el 401 indique token invalido/expirado.
+    if (response.status === 401) {
+      const detail = typeof errorData?.detail === "string" ? errorData.detail.toLowerCase() : "";
+      const tokenErrorHints = [
+        "token invalido",
+        "invalid token",
+        "not authenticated",
+        "could not validate credentials",
+        "token expired",
+      ];
+
+      if (tokenErrorHints.some((hint) => detail.includes(hint))) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+    }
+
+    throw {
+      status: response.status,
+      ...errorData,
+    };
   }
   return response.json();
 }

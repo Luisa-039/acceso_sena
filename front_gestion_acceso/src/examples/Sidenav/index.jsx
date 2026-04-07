@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions"; // Importamos tu hook
+import { useAuth } from "@/context/authContext";
+import { PERMISOS_POR_ROL } from "@/constants/permisos";
 
 // react-router-dom components
 import { useLocation, NavLink } from "react-router-dom";
@@ -59,7 +61,7 @@ function SidenavItem({ route, textColor }) {
         <SidenavCollapse
           name={route.name}
           icon={route.icon}
-          active={isActive}
+          active={false}
           activeColor={route.activeColor}
           activeBackground={route.activeBackground}
           noCollapse={route.noCollapse}
@@ -152,10 +154,31 @@ function SidenavItem({ route, textColor }) {
   return null;
 }
 
+function canRenderRoute(route, idRol) {
+  if (!route) return false;
+
+  if (route.type === "title") return true;
+
+  if (route.type === "accordion") {
+    const children = Array.isArray(route.collapse) ? route.collapse : [];
+    return children.some((child) => canRenderRoute(child, idRol));
+  }
+
+  if (route.type === "collapse") {
+    if (!route.idModulo) return true;
+
+    const permisos = PERMISOS_POR_ROL?.[idRol]?.[route.idModulo];
+    return Boolean(permisos?.seleccionar);
+  }
+
+  return false;
+}
+
 function Sidenav({ color = "info", brand = null, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode } = controller;
   const location = useLocation();
+  const { idRol } = useAuth();
 
   let textColor = "white";
   if (transparentSidenav || (whiteSidenav && !darkMode)) {
@@ -165,13 +188,15 @@ function Sidenav({ color = "info", brand = null, brandName, routes, ...rest }) {
   }
 
   // Renderizado de rutas
-  const renderRoutes = routes.map((route) => (
-    <SidenavItem
-      key={route.key}
-      route={route}
-      textColor={textColor}
-    />
-  ));
+  const renderRoutes = routes
+    .filter((route) => canRenderRoute(route, idRol))
+    .map((route) => (
+      <SidenavItem
+        key={route.key}
+        route={route}
+        textColor={textColor}
+      />
+    ));
 
   // Manejo de responsive
   useEffect(() => {

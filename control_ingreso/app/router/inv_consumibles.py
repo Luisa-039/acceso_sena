@@ -140,7 +140,7 @@ def get_dashboard_consumibles_summary(
 
         requested_sede_id = user_token.sede_id
         if sede_id is not None:
-            if user_token.rol_id not in (1, 2):
+            if user_token.rol_id not in (1, 2) and sede_id != user_token.sede_id:
                 raise HTTPException(status_code=403, detail="No autorizado para consultar otra sede")
             requested_sede_id = sede_id
 

@@ -5,6 +5,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
+import { alerts } from "@/hooks/alerts";
 
 import { apiFetch } from "@/services/api";
 import MDBox from "@/components/MDBox";
@@ -30,7 +31,7 @@ function Access() {
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEquipmentModal, setOpenEquipmentModal] = useState(false);
   const [equipmentDraft, setEquipmentDraft] = useState(null);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [brokenImages, setBrokenImages] = useState({});
   const [createForm, setCreateForm] = useState({
     tipo_persona: "",
     nombre_completo: "",
@@ -142,7 +143,7 @@ function Access() {
       {
         method: "POST",
         body: payload,
-      }
+      },
     );
   };
 
@@ -177,7 +178,10 @@ function Access() {
 
   const handleCancelEquipmentModal = () => {
     setOpenEquipmentModal(false);
-    setCreateForm((prev) => ({ ...prev, hasEquipment: Boolean(equipmentDraft) }));
+    setCreateForm((prev) => ({
+      ...prev,
+      hasEquipment: Boolean(equipmentDraft),
+    }));
   };
 
   const handleCancelCreateModal = () => {
@@ -187,7 +191,7 @@ function Access() {
 
   const handleCreatePersonAndAccess = async () => {
     if (!areaId) {
-      setMessage({ type: "error", text: "Selecciona un area de visita antes de registrar." });
+      alerts.error("Selecciona un area de visita antes de registrar.");
       return;
     }
 
@@ -199,17 +203,18 @@ function Access() {
     ];
 
     if (requiredPersonFields.some((field) => !String(field || "").trim())) {
-      setMessage({ type: "error", text: "Completa todos los datos de la persona." });
+      alerts.error("Completa todos los datos de la persona.");
       return;
     }
 
     if (createForm.hasEquipment && !equipmentDraft) {
-      setMessage({ type: "error", text: "Si la persona trae equipo, completa sus datos en el modal de equipo." });
+      alerts.error(
+        "Si la persona trae equipo, completa sus datos en el modal de equipo.",
+      );
       return;
     }
 
     setIsCreateSubmitting(true);
-    setMessage({ type: "", text: "" });
 
     try {
       await apiFetch("person/crear-persona", {
@@ -225,7 +230,7 @@ function Access() {
       });
 
       const personaCreada = await apiFetch(
-        `person/person-by-document?document=${encodeURIComponent(createForm.documento.trim())}`
+        `person/person-by-document?document=${encodeURIComponent(createForm.documento.trim())}`,
       );
 
       let codBarrasCreado = "";
@@ -242,35 +247,37 @@ function Access() {
           body: equipoData,
         });
 
-        codBarrasCreado = String(equipoData.get("codigo_barras_inv") || "").trim();
+        codBarrasCreado = String(
+          equipoData.get("codigo_barras_inv") || "",
+        ).trim();
       }
 
       await createAccessByDocument(createForm.documento.trim());
 
       if (codBarrasCreado) {
-        await apiFetch(`access/asociar_equipo_scan?cod_barras_eq=${encodeURIComponent(codBarrasCreado)}`, {
-          method: "POST",
-        });
+        await apiFetch(
+          `access/asociar_equipo_scan?cod_barras_eq=${encodeURIComponent(codBarrasCreado)}`,
+          {
+            method: "POST",
+          },
+        );
       }
 
       setIdentifier("");
       setOpenCreateModal(false);
       resetCreateForm("");
-      setMessage({
-        type: "success",
-        text: codBarrasCreado
+      alerts.success(
+        codBarrasCreado
           ? "Persona, equipo y acceso registrados correctamente."
           : "Persona y acceso registrados correctamente.",
-      });
+      );
       fetchAccess();
     } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          typeof error?.detail === "string"
-            ? error.detail
-            : error?.detail?.[0]?.msg || "No se pudo registrar el acceso.",
-      });
+      alerts.error(
+        typeof error?.detail === "string"
+          ? error.detail
+          : error?.detail?.[0]?.msg || "No se pudo registrar el acceso.",
+      );
     } finally {
       setIsCreateSubmitting(false);
     }
@@ -281,78 +288,89 @@ function Access() {
 
     const value = identifier.trim();
     if (!value) {
-      setMessage({ type: "error", text: "Ingresa un documento o serial." });
+      alerts.error("Ingresa un documento o placa.");
       return;
     }
 
     if (!areaId) {
-      setMessage({ type: "error", text: "Selecciona un area de visita." });
+      alerts.error("Selecciona un area de visita.");
       return;
     }
 
     setIsSubmitting(true);
-    setMessage({ type: "", text: "" });
 
     try {
       try {
         // 1) Intentar como documento de persona.
-        await apiFetch(`person/person-by-document?document=${encodeURIComponent(value)}`);
+        await apiFetch(
+          `person/person-by-document?document=${encodeURIComponent(value)}`,
+        );
         await createAccessByDocument(value);
 
         fetchAccess();
         setIdentifier("");
-        setMessage({ type: "success", text: "Acceso registrado correctamente por documento." });
+        alerts.success("Acceso registrado correctamente por documento.");
         return;
       } catch (personError) {
         if (personError?.detail !== "Persona no encontrada") {
-          setMessage({
-            type: "error",
-            text:
-              typeof personError?.detail === "string"
-                ? personError.detail
-                : personError?.detail?.[0]?.msg || "No se pudo registrar el acceso.",
-          });
+          alerts.error(
+            typeof personError?.detail === "string"
+              ? personError.detail
+              : personError?.detail?.[0]?.msg ||
+                  "No se pudo registrar el acceso.",
+          );
           return;
         }
       }
 
       // 2) Intentar como codigo de barras de equipo.
-      const equipo = await apiFetch(`equipments/by-cod_barras?cod_barras=${encodeURIComponent(value)}`);
+      const equipo = await apiFetch(
+        `equipments/by-cod_barras?cod_barras=${encodeURIComponent(value)}`,
+      );
       const personas = await apiFetch("person/all/person");
-      const personaAsociada = (personas || []).find((p) => p.id_persona === equipo.persona_id);
+      const personaAsociada = (personas || []).find(
+        (p) => p.id_persona === equipo.persona_id,
+      );
 
       if (!personaAsociada?.documento) {
-        setMessage({ type: "warning", text: "Equipo encontrado, pero la persona no existe. Completa su registro en el modal." });
+        alerts.warning(
+          "Equipo encontrado, pero la persona no existe. Completa su registro en el modal.",
+        );
         openCreatePersonModal("");
         return;
       }
 
       await createAccessByDocument(personaAsociada.documento);
-      await apiFetch(`access/asociar_equipo_scan?cod_barras_eq=${encodeURIComponent(value)}`, {
-        method: "POST",
-      });
+      await apiFetch(
+        `access/asociar_equipo_scan?cod_barras_eq=${encodeURIComponent(value)}`,
+        {
+          method: "POST",
+        },
+      );
 
       setIdentifier("");
-      setMessage({ type: "success", text: "Acceso registrado correctamente por codigo de barras de equipo." });
+      alerts.success(
+        "Acceso registrado correctamente por placa.",
+      );
       fetchAccess();
     } catch (equipError) {
       if (equipError?.detail === "Equipo no encontrado") {
         if (/^\d+$/.test(value)) {
-          setMessage({ type: "warning", text: "La persona no existe. Completa el registro en el modal." });
+          alerts.warning(
+            "La persona no existe. Completa el registro en el modal.",
+          );
           openCreatePersonModal(value);
         } else {
-          setMessage({ type: "warning", text: "No existe un equipo con ese codigo de barras." });
+          alerts.warning("No existe un equipo con esa placa.");
         }
       } else {
-        setMessage({
-          type: "error",
-          text:
-            typeof equipError?.detail === "string"
-              ? equipError.detail
-              : equipError?.detail?.[0]?.msg || "No se pudo registrar el acceso.",
-        });
+        alerts.error(
+          typeof equipError?.detail === "string"
+            ? equipError.detail
+            : equipError?.detail?.[0]?.msg || "No se pudo registrar el acceso.",
+        );
       }
-      } finally {
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -362,24 +380,26 @@ function Access() {
 
     const value = identifier.trim();
     if (!value) {
-      setMessage({ type: "error", text: "Ingresa un documento o serial." });
+      alerts.error("Ingresa un documento o placa.");
       return;
     }
 
     setIsSubmitting(true);
-    setMessage({ type: "", text: "" });
     const fechaSalida = getLocalISODateTime();
 
     try {
       try {
         // 1) Intentar como documento de persona.
-        await apiFetch(`access/salida_person_scan?cod_barras_person=${encodeURIComponent(value)}&fecha_salida=${encodeURIComponent(fechaSalida)}`, {
-          method: "PUT",
-        });
+        await apiFetch(
+          `access/salida_person_scan?cod_barras_person=${encodeURIComponent(value)}&fecha_salida=${encodeURIComponent(fechaSalida)}`,
+          {
+            method: "PUT",
+          },
+        );
 
         fetchAccess();
         setIdentifier("");
-        setMessage({ type: "success", text: "Salida registrada correctamente por documento." });
+        alerts.success("Salida registrada correctamente.");
         return;
       } catch (personError) {
         const personDetail = personError?.detail;
@@ -389,46 +409,53 @@ function Access() {
           personDetail === "No existe un ingreso activo para esa persona.";
 
         if (!shouldTryEquipment) {
-          setMessage({
-            type: "error",
-            text:
-              typeof personError?.detail === "string"
-                ? personError.detail
-                : personError?.detail?.[0]?.msg || "No se pudo registrar la salida.",
-          });
+          alerts.error(
+            typeof personError?.detail === "string"
+              ? personError.detail
+              : personError?.detail?.[0]?.msg ||
+                  "No se pudo registrar la salida.",
+          );
           return;
         }
       }
 
       // 2) Intentar como codigo de barras de equipo.
-      await apiFetch(`access/salida_equip_scan?cod_barras_equipo=${encodeURIComponent(value)}&fecha_salida=${encodeURIComponent(fechaSalida)}`, {
-        method: "PUT",
-      });
+      await apiFetch(
+        `access/salida_equip_scan?cod_barras_equipo=${encodeURIComponent(value)}&fecha_salida=${encodeURIComponent(fechaSalida)}`,
+        {
+          method: "PUT",
+        },
+      );
 
       setIdentifier("");
-      setMessage({ type: "success", text: "Salida registrada correctamente por codigo de barras de equipo." });
+      alerts.success(
+        "Salida registrada correctamente por codigo de barras de equipo.",
+      );
       fetchAccess();
     } catch (equipError) {
-      if (equipError?.detail === "No existe un ingreso activo para ese equipo.") {
-        setMessage({ type: "warning", text: "Ese equipo no tiene un ingreso activo para registrar la salida." });
-      } else
-      if (equipError?.detail === "Equipo no encontrado") {
+      if (
+        equipError?.detail === "No existe un ingreso activo para ese equipo."
+      ) {
+        alerts.warning(
+          "Ese equipo no tiene un ingreso activo para registrar la salida.",
+        );
+      } else if (equipError?.detail === "Equipo no encontrado") {
         if (/^\d+$/.test(value)) {
-          setMessage({ type: "warning", text: "La persona no existe. Completa el registro en el modal." });
+          alerts.warning(
+            "La persona no existe. Completa el registro en el modal.",
+          );
           openCreatePersonModal(value);
         } else {
-          setMessage({ type: "warning", text: "No existe un equipo con ese codigo de barras." });
+          alerts.warning("No existe un equipo con ese codigo de barras.");
         }
       } else {
-        setMessage({
-          type: "error",
-          text:
-            typeof equipError?.detail === "string"
-              ? equipError.detail
-              : equipError?.detail?.[0]?.msg || "No se pudo registrar la salida.",
-        });
+        alerts.error(
+          typeof equipError?.detail === "string"
+            ? equipError.detail
+            : equipError?.detail?.[0]?.msg || "No se pudo registrar la salida.",
+        );
       }
-      } finally {
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -437,25 +464,49 @@ function Access() {
     () => [
       { header: "Persona", accessorKey: "persona" },
       { header: "Serial", accessorKey: "serial" },
+      { header: "Foto", accessorKey: "foto_path",
+        cell: (info) => {
+          const value = info.getValue();
+
+          if (!value || brokenImages[value]) return "Sin imagen";
+
+          return (
+            <img
+              src={`http://localhost:8000/${value}`}
+              alt="equipo"
+              style={{
+                width: "70px",
+                borderRadius: "6px",
+              }}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                setBrokenImages((prev) => ({
+                  ...prev,
+                  [value]: true,
+                }));
+              }}
+            />
+          );
+        },
+      },
       { header: "Area", accessorKey: "area" },
       { header: "Sede", accessorKey: "sede" },
       { header: "Entrada", accessorKey: "entrada" },
       { header: "Salida", accessorKey: "salida" },
     ],
-    []
+    [brokenImages],
   );
 
   const rows = accessRows.map((registro) => ({
     id: registro.id_acceso,
     persona: registro.nombre_completo,
     serial: registro.serial || "Sin equipo",
+    foto_path: registro.foto_path || "",
     area: registro.nombre_area || "No definida",
     sede: registro.nombre_sede || "-",
     entrada: formatearFecha(registro.fecha_entrada),
     salida: formatearFecha(registro.fecha_salida),
   }));
-
-  const messageColor = message.type === "success" ? "success" : message.type === "warning" ? "warning" : "error";
 
   return (
     <MDBox>
@@ -494,15 +545,11 @@ function Access() {
                     renderValue: (selected) => {
                       if (!selected) {
                         return (
-                          <span style={{ color: "#aaa" }}>
-                            Área de visita
-                          </span>
+                          <span style={{ color: "#aaa" }}>Área de visita</span>
                         );
                       }
 
-                      const area = areas.find(
-                        (a) => a.id_area === selected
-                      );
+                      const area = areas.find((a) => a.id_area === selected);
 
                       return area ? area.nombre_area : "";
                     },
@@ -530,7 +577,21 @@ function Access() {
                   <MDButton
                     variant="gradient"
                     sx={{
-                      background: "linear-gradient(45deg, #043473 30%, #1e5aa8 90%)",
+                      background:
+                        "linear-gradient(45deg, #FDC300 30%, #f6d844 90%)",
+
+                      "&:hover": {
+                        background:
+                          "linear-gradient(45deg, #FDC300 30%, #f6d844 90%)",
+                      },
+                      "&:active": {
+                        background:
+                          "linear-gradient(45deg, #FDC300 30%, #f6d844 90%)",
+                      },
+                      "&:focus": {
+                        background:
+                          "linear-gradient(45deg, #FDC300 30%, #f6d844 90%)",
+                      },
                     }}
                     onClick={handleRegisterOut}
                     disabled={isSubmitting || !canInsert}
@@ -540,12 +601,6 @@ function Access() {
                 </MDBox>
               </Grid>
             </Grid>
-
-            {message.text && (
-              <MDTypography variant="button" color={messageColor} mt={2} display="block">
-                {message.text}
-              </MDTypography>
-            )}
           </MDBox>
         </Card>
 
@@ -578,13 +633,19 @@ function Access() {
         </MDBox>
       </MDBox>
 
-      <Dialog open={openCreateModal} onClose={handleCancelCreateModal} fullWidth maxWidth="md">
+      <Dialog
+        open={openCreateModal}
+        onClose={handleCancelCreateModal}
+        fullWidth
+        maxWidth="md"
+      >
         <MDBox p={3}>
           <MDTypography variant="h5" mb={1}>
             Registrar persona para acceso
           </MDTypography>
           <MDTypography variant="button" color="text" display="block" mb={3}>
-            Si la persona trae equipo, activalo y completa los datos del equipo antes de registrar.
+            Si la persona trae equipo, activalo y completa los datos del equipo
+            antes de registrar.
           </MDTypography>
 
           <Grid container spacing={2}>
@@ -606,9 +667,7 @@ function Access() {
                   renderValue: (selected) => {
                     if (!selected) {
                       return (
-                        <span style={{ color: "#aaa" }}>
-                          Tipo de persona
-                        </span>
+                        <span style={{ color: "#aaa" }}>Tipo de persona</span>
                       );
                     }
                     return selected;
@@ -638,9 +697,7 @@ function Access() {
                   renderValue: (selected) => {
                     if (!selected) {
                       return (
-                        <span style={{ color: "#aaa" }}>
-                          Tipo de documento
-                        </span>
+                        <span style={{ color: "#aaa" }}>Tipo de documento</span>
                       );
                     }
                     return selected;
@@ -675,7 +732,12 @@ function Access() {
 
             <Grid item xs={12}>
               <FormControlLabel
-                control={<Switch checked={createForm.hasEquipment} onChange={handleToggleHasEquipment} />}
+                control={
+                  <Switch
+                    checked={createForm.hasEquipment}
+                    onChange={handleToggleHasEquipment}
+                  />
+                }
                 label="Esta persona trae equipo"
               />
             </Grid>
@@ -684,7 +746,9 @@ function Access() {
               <>
                 <Grid item xs={12} md={6}>
                   <MDTypography variant="button" color="text">
-                    {equipmentDraft ? "Equipo listo para registrar." : "Completa los datos del equipo en el modal."}
+                    {equipmentDraft
+                      ? "Equipo listo para registrar."
+                      : "Completa los datos del equipo en el modal."}
                   </MDTypography>
                 </Grid>
                 <Grid item xs={12} md={6}>
@@ -701,7 +765,11 @@ function Access() {
           </Grid>
 
           <MDBox mt={3} display="flex" justifyContent="flex-end" gap={1}>
-            <MDButton variant="text" color="secondary" onClick={handleCancelCreateModal}>
+            <MDButton
+              variant="text"
+              color="secondary"
+              onClick={handleCancelCreateModal}
+            >
               Cancelar
             </MDButton>
             <MDButton
@@ -716,7 +784,12 @@ function Access() {
         </MDBox>
       </Dialog>
 
-      <Dialog open={openEquipmentModal} onClose={handleCancelEquipmentModal} fullWidth maxWidth="md">
+      <Dialog
+        open={openEquipmentModal}
+        onClose={handleCancelEquipmentModal}
+        fullWidth
+        maxWidth="md"
+      >
         <MDBox p={3}>
           <EquipoCreateModal
             includePersona={false}
