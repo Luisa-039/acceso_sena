@@ -42,6 +42,11 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
 
   const currentUser = user;
   const userName = currentUser?.nombre_usuario || "Usuario";
+  const userRole =
+    currentUser?.nombre_rol ||
+    currentUser?.rol ||
+    currentUser?.role ||
+    "Sin rol";
 
   const formatSessionDate = (isoDate) => {
     if (!isoDate) return "Sin registros";
@@ -177,7 +182,7 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
             <PersonOutlineIcon sx={{ color: "#0a853d", mr: 1 }} />
             <MDBox lineHeight={1.2}>
               <MDBox component="span" sx={{ fontSize: "0.9rem", fontWeight: 700, color: "#0a853d" }}>
-                {userName}
+                {userName} / {userRole}
               </MDBox>
               <MDBox component="span" display="block" sx={{ fontSize: "0.72rem", color: "#5f5f5f" }}>
                 Ultima sesion: {lastSession}

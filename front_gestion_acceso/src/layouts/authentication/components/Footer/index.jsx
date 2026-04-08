@@ -10,8 +10,9 @@ import MDBox from "@/components/MDBox";
 // Material Dashboard 2 React base styles
 import typography from "@/assets/theme/base/typography";
 
-function Footer({ light="false" }) {
+function Footer({ light = false }) {
   const { size } = typography;
+  const currentYear = new Date().getFullYear();
 
   return (
     <MDBox position="absolute" width="100%" bottom={0} py={4}>
@@ -19,39 +20,32 @@ function Footer({ light="false" }) {
         <MDBox
           width="100%"
           display="flex"
-          flexDirection={{ xs: "column", lg: "row" }}
-          justifyContent="space-between"
-          alignItems="center"
+          flexDirection="column"
+          alignItems={{ xs: "flex-start", md: "center" }}
+          gap={0.75}
           px={1.5}
         >
           <MDBox
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            flexWrap="wrap"
             color={light ? "white" : "text"}
             fontSize={size.sm}
+            textAlign={{ xs: "left", md: "center" }}
           >
-            Realizado por: ADSO &copy; {new Date().getFullYear()} 
-            
+            El SENA impulsa la formacion integral para el trabajo, la innovacion y el desarrollo
+            social del pais.
           </MDBox>
           <MDBox
-            component="ul"
-            sx={({ breakpoints }) => ({
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "center",
-              listStyle: "none",
-              mt: 3,
-              mb: 0,
-              p: 0,
-
-              [breakpoints.up("lg")]: {
-                mt: 0,
-              },
-            })}
+            color={light ? "white" : "text"}
+            fontSize={size.sm}
+            textAlign={{ xs: "left", md: "center" }}
           >
+            © {currentYear} SENA. Todos los derechos reservados.
+          </MDBox>
+          <MDBox
+            color={light ? "white" : "text"}
+            fontSize={size.sm}
+            textAlign={{ xs: "left", md: "center" }}
+          >
+            Linea de atencion de soporte: 01 8000 910 270
           </MDBox>
         </MDBox>
       </Container>

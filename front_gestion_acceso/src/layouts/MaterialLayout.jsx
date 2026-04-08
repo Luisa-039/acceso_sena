@@ -10,6 +10,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import MDBox from "@/components/MDBox";
 import Sidenav from "@/examples/Sidenav";
 import Configurator from "@/examples/Configurator";
+import Footer from "@/examples/Footer";
 
 // Themes
 import theme from "@/assets/theme";
@@ -84,8 +85,10 @@ export default function MaterialLayout() {
         sx={({ breakpoints, transitions }) => ({
           p: 3,
           position: "relative",
-          minHeight: "auto",
+          minHeight: "100vh",
           overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
 
           [breakpoints.up("xl")]: {
             marginLeft: miniSidenav ? "120px" : "274px",
@@ -96,7 +99,10 @@ export default function MaterialLayout() {
           },
         })}
       >
-        <Outlet />
+        <MDBox sx={{ flex: 1 }}>
+          <Outlet />
+        </MDBox>
+        <Footer company={{ href: "" }} />
       </MDBox>
     </ThemeProvider>
   );

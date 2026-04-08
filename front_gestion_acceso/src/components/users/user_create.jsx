@@ -170,7 +170,7 @@ function UserCreateModal({ onSave, onCancel }) {
           Cancelar
         </MDButton>
 
-        <MDButton sx={{background: "green"}} variant="gradient" type="submit">
+        <MDButton color="success" variant="gradient" type="submit">
           Registrar
         </MDButton>
       </MDBox>

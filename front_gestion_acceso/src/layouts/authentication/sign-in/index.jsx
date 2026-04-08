@@ -27,7 +27,7 @@ function Basic({email,
               onSubmit}) {
 
   return (
-    <BasicLayout image={bgImage}>
+    <BasicLayout image={bgImage} showFooter={false}>
       <Card pb={5} sx={{
         background: "#4d9b26e0",
         color: "green",

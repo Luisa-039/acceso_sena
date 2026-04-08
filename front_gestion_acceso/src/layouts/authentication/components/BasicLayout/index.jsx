@@ -14,7 +14,7 @@ import PageLayout from "@/examples/LayoutContainers/PageLayout";
 // Authentication pages components
 import Footer from "@/layouts/authentication/components/Footer";
 
-function BasicLayout({ image, children }) {
+function BasicLayout({ image, children, showFooter = true }) {
   return (
     <PageLayout>
       <Grid container display="flex">
@@ -42,7 +42,7 @@ function BasicLayout({ image, children }) {
       />
       
       </Grid>
-      <Footer light />
+      {showFooter ? <Footer light /> : null}
     </PageLayout>
   );
 }
@@ -51,6 +51,7 @@ function BasicLayout({ image, children }) {
 BasicLayout.propTypes = {
   image: PropTypes.string.isRequired,
   children: PropTypes.node.isRequired,
+  showFooter: PropTypes.bool,
 };
 
 export default BasicLayout;

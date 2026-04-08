@@ -186,7 +186,7 @@ const routes = [
       },
       {
         type: "collapse",
-        name: "Movimientos",
+        name: "Historial de equipos",
         key: "movements_group",
         route: "movements",
         idModulo: MODULOS.MOVIMIENTO_EQUIPOS,
