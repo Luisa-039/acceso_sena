@@ -167,53 +167,6 @@ def asociar_equipo(db:Session, cod_barras:str):
         logger.error(f"Error al asociar el equipo: {e}")
         raise Exception("Error de base de datos al asociar el equipo")
 
-#registrar por serial si la pistola falla
-def asociar_equipo_by_serial(db:Session, serial_equip:str):
-    try: 
-        datos_equip_query = text("""
-                                 SELECT id_equipo, persona_id
-                                 FROM equipos_externos
-                                 WHERE serial = :serial_equip
-                                 """)
-
-        equipo_result = db.execute(
-            datos_equip_query, {"serial_equip": serial_equip}
-        ).mappings().first()
-        
-        if not equipo_result:
-            return {"Equipo no encontrado en el sistema"}
-        
-        registro_activo = text("""
-                                SELECT id_acceso
-                                FROM registro_accesos
-                                WHERE persona_id = :persona_id
-                                AND fecha_salida IS NULL
-                                ORDER BY fecha_entrada DESC
-                                LIMIT 1;
-                               """)
-        
-        result_registro =db.execute(
-            registro_activo, {"persona_id": equipo_result["persona_id"]}
-        ).mappings().first()
-        
-        if not result_registro:
-            return False        
-        
-        sentencia = text("""
-            UPDATE registro_accesos
-            SET equipo_id = :id_equipo
-            WHERE id_acceso = :access_id
-        """)
-        result = db.execute(sentencia, {"id_equipo": equipo_result["id_equipo"], "access_id": result_registro["id_acceso"]})
-        db.commit()
-
-        return result.rowcount > 0
-        
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error(f"Error al asociar el equipo: {e}")
-        raise Exception("Error de base de datos al asociar el equipo")
-
 # registrar ingreso directamente por código de barras del equipo
 def registro_acceso_equipo(db: Session, cod_barras_equip: str, area_id_s: int, access: AccessCreate, usuario_id: int) -> str:
     try:
@@ -472,8 +425,8 @@ def check_out_equip_serial(db:Session, serial_eq:str, fecha_salida=None):
             db.rollback()
             logger.error(f"Error al realizar el registro de salida: {e}")
             raise Exception("Error de base de datos al realizar el registro de salida") 
-    
- #obtener datos de persona por scan documento
+
+#obtener datos de persona por scan documento
 
 def get_access_by_id(db:Session, id_acceso_p:int):
     try:

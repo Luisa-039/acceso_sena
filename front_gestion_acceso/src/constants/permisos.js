@@ -86,7 +86,7 @@ export const PERMISOS_POR_ROL = {
     17: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // areas
     18: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // encuestas
     19: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // tipos movimientos
-    21: { insertar: false,  actualizar: false,  seleccionar: true,  borrar: false  }, // ver dashboard
+    21: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // ver dashboard
  },
  5: { // Técnico
     1: { insertar: false,  actualizar: false,  seleccionar: false,  borrar: false  }, // modulos
