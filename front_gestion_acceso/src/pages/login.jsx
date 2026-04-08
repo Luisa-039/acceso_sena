@@ -34,9 +34,12 @@ function Login() {
       const rolId = Number(data.user?.rol_id);
       const nombreRol = String(data.user?.nombre_rol || data.user?.rol || "").toLowerCase();
       const esVigilante = rolId === 4 || nombreRol.includes("vigilante");
+      const esTecnico = rolId === 5 || nombreRol.includes("técnico") || nombreRol.includes("tecnico");
 
       if (esVigilante) {
         navigate("/dashboard/registro-access", { replace: true });
+      } else if (esTecnico) {
+        navigate("/dashboard/equipement_sede", { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
       }
