@@ -223,27 +223,7 @@ def consulta_by_doc_person(
         return registro_ext
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-#Asociar al usuario por serial del equipo
-@router.post("/asociar_equipo_serial", status_code=status.HTTP_201_CREATED)
-def asoc_equip(serial: str,
-    db: Session = Depends(get_db),
-    user_token: UserOut = Depends(get_current_user)
-):
-    try:
-        id_rol = user_token.rol_id             
-        if not verify_permissions(db, id_rol, modulo, 'insertar'):
-            raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
-        
-        resultado = crud_access.asociar_equipo_by_serial(db, serial)
-        
-        if resultado:
-            return {"message": "Equipo asociado al registro correctamente"}
-        else:
-            raise HTTPException(status_code=404, detail=("Equipo no encontrado en el sistema"))    
-    except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
+ 
 #Actualizar fecha de salida por serial equipo
 @router.put("/salida_equip_serial")
 def check_out_equipo_serial(
