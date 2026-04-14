@@ -23,10 +23,18 @@ def create_encuesta(
         id_rol = user_token.rol_id       
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
-        crud_encuesta.create_encuesta(db, encuesta)
+        created = crud_encuesta.create_encuesta(db, encuesta)
+        if not created:
+            raise HTTPException(status_code=400, detail="No se pudo crear la encuesta")
         return {"message": "Encuesta creada correctamente"}
+
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     
     except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/encuesta-by-id", response_model=EncuestaOut)

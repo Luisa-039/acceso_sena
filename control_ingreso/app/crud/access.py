@@ -290,7 +290,9 @@ def check_out_person(db:Session, cod_barras_person:str, fecha_salida=None):
         )
         db.commit()
         
-        return result.rowcount > 0
+        if result.rowcount > 0:
+            return result_registro["id_acceso"]
+        return False
     
     except SQLAlchemyError as e:
             db.rollback()
@@ -351,7 +353,9 @@ def check_out_equip(db:Session, cod_barras_equip:str, fecha_salida=None):
         )
         db.commit()
         
-        return result.rowcount > 0
+        if result.rowcount > 0:
+            return result_validacion["id_acceso"]
+        return False
     
     except SQLAlchemyError as e:
             db.rollback()

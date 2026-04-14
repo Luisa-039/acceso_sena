@@ -76,6 +76,10 @@ function Encuestas() {
       setOpenCreate(false);
       alerts.success("Encuesta creada con éxito");
     } catch (error) {
+      if (error.status === 409) {
+        alerts.error(error.detail || "Ya existe una encuesta para este acceso");
+        return;
+      }
       if (error.status === 401) {
         alerts.error("Error al crear la encuesta");
       }

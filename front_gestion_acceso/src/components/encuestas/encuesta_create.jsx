@@ -8,10 +8,9 @@ import Rating from "@mui/material/Rating";
 function EncuestaCreateModal({ onSave, onCancel }) {
 
   const [form, setForm] = useState({
-    acceso_id: "",
     calificacion: 0,
     observacion: "",
-    estado: true
+    estado_encuesta: true,
   });
 
 
@@ -35,15 +34,6 @@ function EncuestaCreateModal({ onSave, onCancel }) {
       <MDTypography variant="h6" mb={3} align="center">
         Encuesta de satisfacción
       </MDTypography>
-
-      <MDBox mb={2} sx={{ width: "100%", maxWidth: 420 }}>
-        <MDInput
-          label="ID Acceso"
-          name="acceso_id"
-          value={form.acceso_id}
-          onChange={handleChange}
-        />
-      </MDBox>
 
       <MDBox
         mb={2}

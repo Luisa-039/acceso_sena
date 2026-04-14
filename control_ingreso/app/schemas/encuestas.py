@@ -4,18 +4,15 @@ from typing import List, Optional
 class EncuestaBase(BaseModel): 
     acceso_id: int = Field(gt=0)
     calificacion: int = Field(ge=1, le=5)
-    observacion: str = Field(min_length=1, max_length=255)
+    observacion: Optional[str] = Field(None, max_length=255)
 
     
 class EncuestaCreate(EncuestaBase):
-    pass
+    estado_encuesta: bool = Field(default=False)
 
 class EncuestaUpdate(BaseModel):
     calificacion: Optional[int] = Field(None, ge=1, le=5)
     observacion: Optional[str] = Field(None, min_length=1, max_length=255)
-
-class EncuestaState(BaseModel):
-    estado_encuesta: bool
 
 class EncuestaOut(EncuestaBase):
     id_encuesta: int

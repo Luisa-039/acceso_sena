@@ -20,16 +20,29 @@ def _scope_filter(sede_id: int | None, centro_id: int | None, alias: str = "ra",
 
 def create_encuesta(db: Session, encuesta: EncuestaCreate) -> Optional[bool]:
     try:
+        # Una encuesta por acceso: evita error de llave unica y permite respuesta clara.
+        duplicate_query = text("""
+            SELECT id_encuesta
+            FROM encuestas
+            WHERE acceso_id = :acceso_id
+        """)
+        existing = db.execute(duplicate_query, {"acceso_id": encuesta.acceso_id}).mappings().first()
+        if existing:
+            raise ValueError("Ya existe una encuesta para este acceso")
+
         query = text("""
             INSERT INTO encuestas (
                 acceso_id, calificacion, observacion, estado_encuesta
             ) VALUES (
-                :acceso_id, :calificacion, :observacion, false
+                :acceso_id, :calificacion, :observacion, :estado_encuesta
             )
         """)
         db.execute(query, encuesta.model_dump())
         db.commit()
         return True
+    except ValueError:
+        db.rollback()
+        raise
     except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"Error al crear la encuesta: {e}")

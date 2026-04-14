@@ -15,6 +15,7 @@ import MDButton from "@/components/MDButton";
 import DataTable from "@/examples/Tables/DataTable";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import EquipoCreateModal from "@/components/equipments/equipments_create";
+import EncuestaCreateModal from "@/components/encuestas/encuesta_create";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
 import { useSede } from "@/context/sedeContext";
@@ -31,6 +32,8 @@ function Access() {
   const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEquipmentModal, setOpenEquipmentModal] = useState(false);
+  const [openEncuestaModal, setOpenEncuestaModal] = useState(false);
+  const [pendingAccessId, setPendingAccessId] = useState(null);
   const [equipmentDraft, setEquipmentDraft] = useState(null);
   const [brokenImages, setBrokenImages] = useState({});
   const { effectiveSedeId } = useSede();
@@ -396,12 +399,17 @@ function Access() {
     try {
       try {
         // 1) Intentar como documento de persona.
-        await apiFetch(
+        const respPersona = await apiFetch(
           `access/salida_person_scan?cod_barras_person=${encodeURIComponent(value)}&fecha_salida=${encodeURIComponent(fechaSalida)}`,
           {
             method: "PUT",
           },
         );
+
+        if (respPersona?.id_acceso) {
+          setPendingAccessId(respPersona.id_acceso);
+          setOpenEncuestaModal(true);
+        }
 
         fetchAccess();
         setIdentifier("");
@@ -426,12 +434,17 @@ function Access() {
       }
 
       // 2) Intentar como codigo de barras de equipo.
-      await apiFetch(
+      const respEquipo = await apiFetch(
         `access/salida_equip_scan?cod_barras_equipo=${encodeURIComponent(value)}&fecha_salida=${encodeURIComponent(fechaSalida)}`,
         {
           method: "PUT",
         },
       );
+
+      if (respEquipo?.id_acceso) {
+        setPendingAccessId(respEquipo.id_acceso);
+        setOpenEncuestaModal(true);
+      }
 
       setIdentifier("");
       alerts.success(
@@ -463,6 +476,29 @@ function Access() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitEncuesta = async (formData) => {
+    try {
+      await apiFetch("encuestas/crear-encuesta", {
+        method: "POST",
+        body: {
+          ...formData,
+          acceso_id: pendingAccessId,
+        },
+      });
+
+      setOpenEncuestaModal(false);
+      setPendingAccessId(null);
+      fetchAccess();
+      alerts.success("Encuesta enviada correctamente");
+    } catch (error) {
+      if (error.status === 409) {
+        alerts.error(error.detail || "Ya existe una encuesta para este acceso");
+      } else {
+        alerts.error("Error al enviar la encuesta");
+      }
     }
   };
 
@@ -801,6 +837,20 @@ function Access() {
             includePersona={false}
             onSave={handleSaveEquipmentDraft}
             onCancel={handleCancelEquipmentModal}
+          />
+        </MDBox>
+      </Dialog>
+
+      <Dialog
+        open={openEncuestaModal}
+        onClose={() => setOpenEncuestaModal(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <MDBox p={3}>
+          <EncuestaCreateModal
+            onSave={handleSubmitEncuesta}
+            onCancel={() => setOpenEncuestaModal(false)}
           />
         </MDBox>
       </Dialog>

@@ -161,7 +161,7 @@ def check_out_person(
         resultado = crud_access.check_out_person(db, cod_barras_person, fecha_salida)
         
         if resultado:
-            return {"Registro de salida almacenado correctamente"}
+            return {"message": "Registro de salida almacenado correctamente", "id_acceso": resultado}
         else:
             raise HTTPException(status_code=404, detail=("Error al registrar la salida"))
     
@@ -190,7 +190,7 @@ def check_out_equipo(
             )
         
         if resultado:
-            return {"Registro de salida almacenado correctamente"}
+            return {"message": "Registro de salida almacenado correctamente", "id_acceso": resultado}
         else:
             raise HTTPException(status_code=404, detail=("Error al registrar la salida"))
         
