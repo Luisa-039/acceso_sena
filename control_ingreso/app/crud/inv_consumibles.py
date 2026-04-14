@@ -30,32 +30,55 @@ def create_inv_consumible(db: Session,
         logger.error(f"Error al registrar el equipo de la sede: {e}")
         raise Exception("Error de base de datos al registrar el equipo de la sede") 
 
-def get_inv_consumible_by_id(db: Session, id_consumible: int):
+def get_inv_consumible_by_id(
+    db: Session,
+    id_consumible: int,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     try:
-        query = text("""SELECT ic.id_consumible, ic.ubicacion, ic.placa, ic.categoria_id, ic.marca, 
+        sede_filter = "AND ic.sede_id = :sede_id" if sede_id is not None else ""
+        centro_filter = "AND s.centro_id = :centro_id" if centro_id is not None else ""
+        query = text(f"""SELECT ic.id_consumible, ic.ubicacion, ic.placa, ic.categoria_id, ic.marca, 
                         ic.modelo, ic.sede_id, ic.fecha_registro, ic.cantidad, ic.porcentaje_toner,
                         ic.estado, s.nombre as nombre_sede, c.nombre_categoria
                         FROM inv_consumibles as ic
                         INNER JOIN sedes as s ON ic.sede_id = s.id_sede
                         INNER JOIN categorias as c ON ic.categoria_id = c.id_categoria
-                        WHERE ic.id_consumible = :id_consumible""")
-        result = db.execute(query, {"id_consumible": id_consumible}).mappings().first()
+                        WHERE ic.id_consumible = :id_consumible {sede_filter} {centro_filter}""")
+        params = {"id_consumible": id_consumible}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().first()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener consumible por ID: {e}")
         raise Exception("Error de base de datos al obtener el consumible por ID")
 
-def get_all_inv_consumibles(db: Session):
+def get_all_inv_consumibles(db: Session, sede_id: int | None = None, centro_id: int | None = None):
     try:
-        query = text("""SELECT ic.id_consumible, ic.ubicacion, ic.placa, ic.categoria_id, ic.marca, 
+        filters = []
+        if sede_id is not None:
+            filters.append("ic.sede_id = :sede_id")
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        query = text(f"""SELECT ic.id_consumible, ic.ubicacion, ic.placa, ic.categoria_id, ic.marca, 
                         ic.modelo, ic.sede_id, ic.fecha_registro, ic.cantidad, ic.porcentaje_toner,
                         ic.estado, s.nombre as nombre_sede, c.nombre_categoria
                         FROM inv_consumibles as ic
                         INNER JOIN sedes as s ON ic.sede_id = s.id_sede
                         INNER JOIN categorias as c ON ic.categoria_id = c.id_categoria
+                        {where_clause}
                      """)
-        result = db.execute(query).mappings().all()
-        print([e.estado for e in result])
+        params = {}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().all()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener los datos de los consumibles: {e}")
@@ -102,7 +125,14 @@ def update_estado_consumible(db:Session, id_consumible: int, estado_consumible: 
         logger.error(f"Error al cambiar el estado del consumible {id_consumible}: {e}")
         raise Exception("Error de base de datos al cambiar el estado del consumible")
     
-def get_all_consumible_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
+def get_all_consumible_pag(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    search: str = "",
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     """
     Obtiene los consumibles con paginación y búsqueda.
     También realizar una segunda consulta para contar total de consumibles.
@@ -127,6 +157,14 @@ def get_all_consumible_pag(db: Session, skip:int = 0, limit = 10, search: str = 
                    OR (CASE WHEN ic.estado THEN 'activo' ELSE 'inactivo' END) LIKE :search
             """
             query_params["search"] = f"%{search}%"
+
+        if sede_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} ic.sede_id = :sede_id"
+            query_params["sede_id"] = sede_id
+
+        if centro_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} s.centro_id = :centro_id"
+            query_params["centro_id"] = centro_id
 
         count_query = text(f"""
             SELECT COUNT(ic.id_consumible) AS total 
@@ -159,7 +197,11 @@ def get_all_consumible_pag(db: Session, skip:int = 0, limit = 10, search: str = 
         raise Exception("Error de base de datos al obtener los consumibles")
 
 
-def get_dashboard_consumibles_summary(db: Session, sede_id: int):
+def get_dashboard_consumibles_summary(
+    db: Session,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     """
     Retorna un resumen para dashboard filtrado por sede:
     - total de consumibles
@@ -167,28 +209,47 @@ def get_dashboard_consumibles_summary(db: Session, sede_id: int):
     - cantidades agrupadas por categoria
     """
     try:
-        totales_query = text("""
+        filters = []
+        params = {}
+        if sede_id is not None:
+            filters.append("ic.sede_id = :sede_id")
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+            params["centro_id"] = centro_id
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+
+        totales_query = text(f"""
             SELECT
                 COUNT(*) AS total,
-                COALESCE(SUM(CASE WHEN estado = true THEN 1 ELSE 0 END), 0) AS activos,
-                COALESCE(SUM(CASE WHEN estado = false THEN 1 ELSE 0 END), 0) AS inactivos
-            FROM inv_consumibles
-            WHERE sede_id = :sede_id
+                COALESCE(SUM(CASE WHEN ic.estado = true THEN 1 ELSE 0 END), 0) AS activos,
+                COALESCE(SUM(CASE WHEN ic.estado = false THEN 1 ELSE 0 END), 0) AS inactivos
+            FROM inv_consumibles ic
+            INNER JOIN sedes s ON s.id_sede = ic.sede_id
+            {where_clause}
         """)
-        totales = db.execute(totales_query, {"sede_id": sede_id}).mappings().first()
+        totales = db.execute(totales_query, params).mappings().first()
 
-        categorias_query = text("""
+        categorias_query = text(f"""
             SELECT
                 c.nombre_categoria AS categoria,
-                COALESCE(SUM(ic.cantidad), 0) AS cantidad
+                COALESCE(SUM(
+                    CASE
+                        WHEN {"s.id_sede IS NOT NULL" if centro_id is not None else "1=1"} THEN ic.cantidad
+                        ELSE 0
+                    END
+                ), 0) AS cantidad
             FROM categorias c
             LEFT JOIN inv_consumibles ic
                 ON ic.categoria_id = c.id_categoria
-                AND ic.sede_id = :sede_id
+                {f'AND ic.sede_id = :sede_id' if sede_id is not None else ''}
+            LEFT JOIN sedes s
+                ON s.id_sede = ic.sede_id
+                {f'AND s.centro_id = :centro_id' if centro_id is not None else ''}
             GROUP BY c.id_categoria, c.nombre_categoria
             ORDER BY c.nombre_categoria ASC
         """)
-        categorias = db.execute(categorias_query, {"sede_id": sede_id}).mappings().all()
+        categorias = db.execute(categorias_query, params).mappings().all()
 
         return {
             "total": int((totales or {}).get("total", 0) or 0),

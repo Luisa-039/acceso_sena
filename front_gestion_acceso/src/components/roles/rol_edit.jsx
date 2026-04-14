@@ -50,7 +50,7 @@ export default function RolEditModal({ onCancel, rol, onSave }) {
         <MDButton onClick={onCancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
-        <MDButton sx={{background: "green"}} type="submit" variant="gradient">
+        <MDButton color="success" type="submit" variant="gradient">
           Actualizar
         </MDButton>
       </MDBox>

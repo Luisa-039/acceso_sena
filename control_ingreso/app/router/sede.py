@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.schemas.sede import SedeCreate, SedeUpdate, SedeOut, PaginatedSede
 from app.schemas.users import UserOut
 from app.crud import sede as crud_sede
+from app.core.visibility_scope import resolve_visibility_scope
 from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
@@ -40,7 +41,13 @@ def get_sede(
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
 
-        sede = crud_sede.get_sede_by_code(db, codigo_sede)
+        scope = resolve_visibility_scope(db, user_token)
+        sede = crud_sede.get_sede_by_code(
+            db,
+            codigo_sede,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not sede:
             raise HTTPException(status_code=404, detail="Sede no encontrada")
         return sede
@@ -56,7 +63,12 @@ def get_all_sedes(
         id_rol = user_token.rol_id
         if not verify_permissions(db, id_rol, modulo, "seleccionar"):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
-        sede = crud_sede.get_all_sedes(db)
+        scope = resolve_visibility_scope(db, user_token)
+        sede = crud_sede.get_all_sedes(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         return sede
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -109,6 +121,7 @@ def get_sedes_pag(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     search: str = Query("", min_length=0),
+    sede_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ): 
@@ -118,7 +131,15 @@ def get_sedes_pag(
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
         skip = (page - 1) * page_size
-        data = crud_sede.get_all_sede_pag(db, skip=skip, limit=page_size, search=search)
+        scope = resolve_visibility_scope(db, user_token, sede_id)
+        data = crud_sede.get_all_sede_pag(
+            db,
+            skip=skip,
+            limit=page_size,
+            search=search,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         
         total = data["total"]  
         sedes = data["sedes"] 

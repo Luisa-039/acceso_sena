@@ -67,6 +67,7 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
     });
   };
 
+  //Para almacenar la última sesión del usuario
   const lastSession = (() => {
     if (!currentUser?.id_usuario) return "Sin registros";
 
@@ -76,22 +77,31 @@ function DashboardNavbar({ absolute = "false", light = "false", title = "", midd
     return formatSessionDate(lastSessionByUser || currentSessionByUser);
   })();
 
+  //Esto es para cerrar la sesión
   const handleLogout = () => {
     logoutUser();
     window.location.href = "/login";
   };
 
-  const navbarTitle = title || `Sede ${selectedSedeName}`;
+  const navbarTitle = title || `${selectedSedeName}`;
 
   const defaultMiddleContent = canSelectSede ? (
     <FormControl size="small" sx={{ minWidth: 260 }}>
-      <InputLabel id="navbar-sede-select-label">Cambiar sede</InputLabel>
+      <InputLabel id="navbar-sede-select-label" shrink>Sede</InputLabel>
       <Select
+        id="navbar-sede-select"
         labelId="navbar-sede-select-label"
         value={selectedSedeId || ""}
-        label="Cambiar sede"
-        onChange={(e) => setSelectedSedeId(Number(e.target.value))}
+        label="Sede"
+        displayEmpty
+        renderValue={(value) => {
+          if (!value) return "Selecciona una sede";
+          const selected = sedes.find((sede) => Number(sede.id_sede) === Number(value));
+          return selected?.nombre || "Sede";
+        }}
+        onChange={(e) => setSelectedSedeId(e.target.value ? Number(e.target.value) : null)}
       >
+        <MenuItem value="">Todas las sedes</MenuItem>
         {(sedes || []).map((sede) => (
           <MenuItem key={sede.id_sede} value={sede.id_sede}>
             {sede.nombre}

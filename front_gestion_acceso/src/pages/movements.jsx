@@ -13,6 +13,7 @@ import MenuItem from "@mui/material/MenuItem";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
 import { alerts } from "@/hooks/alerts";
+import { useSede } from "@/context/sedeContext";
 
 
 function movements() {
@@ -24,6 +25,7 @@ function movements() {
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.MOVIMIENTO_EQUIPOS);
+  const { effectiveSedeId } = useSede();
   const canUpdate = isAdmin || permisos.actualizar;
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
@@ -45,6 +47,10 @@ function movements() {
 
     if (searchTerm.trim()) {
       params.append("search", searchTerm.trim());
+    }
+
+    if (effectiveSedeId) {
+      params.append("sede_id", String(effectiveSedeId));
     }
 
     const res = await apiFetch(`movements/paginated?${params.toString()}`)

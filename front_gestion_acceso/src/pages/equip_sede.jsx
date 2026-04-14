@@ -17,6 +17,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils/exportUtils";
 import { MODULOS } from "@/constants/modulos";
 import { alerts } from "@/hooks/alerts";
+import { useSede } from "@/context/sedeContext";
 
 function Equips_sede() {
   const [Equips_sede, setEquips_sede] = useState([]);
@@ -28,6 +29,7 @@ function Equips_sede() {
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.EQUIPOS_SEDE);
+  const { effectiveSedeId } = useSede();
   const canInsert = isAdmin || permisos.insertar;
   const canUpdate = isAdmin || permisos.actualizar;
   const canDelete = isAdmin || permisos.borrar;
@@ -53,6 +55,10 @@ function Equips_sede() {
 
     if (searchTerm.trim()) {
       params.append("search", searchTerm.trim());
+    }
+
+    if (effectiveSedeId) {
+      params.append("sede_id", String(effectiveSedeId));
     }
 
     const res = await apiFetch(`equipments_sede/all_equips-pag?${params.toString()}`)

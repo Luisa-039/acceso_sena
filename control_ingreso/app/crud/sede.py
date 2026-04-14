@@ -27,32 +27,51 @@ def create_sede(db: Session, sede: SedeCreate) -> Optional[bool]:
         logger.error(f"Error al crear la sede: {e}")
         raise Exception("Error de base de datos al crear la sede")
     
-def get_sede_by_code(db: Session, codigo: str):
+def get_sede_by_code(db: Session, codigo: str, sede_id: int | None = None, centro_id: int | None = None):
     try:
+        filters = ["s.codigo_sede = :codigo"]
+        params = {"codigo": codigo}
+        if sede_id is not None:
+            filters.append("s.id_sede = :sede_id")
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+            params["centro_id"] = centro_id
+        where_clause = " AND ".join(filters)
+
         query = text("""SELECT s.id_sede, s.nombre, s.direccion, s.codigo_sede, s.centro_id, 
                      c.codigo_centro AS codigo_centro, c.nombre AS nombre_centro,
                      s.estado
                      FROM sedes as s
                      INNER JOIN centros c ON s.centro_id = c.id_centro
-                     WHERE s.codigo_sede = :codigo
-                """)
+                     WHERE """ + where_clause)
         
-        result = db.execute(query, {"codigo": codigo}).mappings().first()
+        result = db.execute(query, params).mappings().first()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener sede por su código: {e}")
         raise Exception("Error de base de datos al obtener la sede")
     
-def get_all_sedes(db: Session):
+def get_all_sedes(db: Session, sede_id: int | None = None, centro_id: int | None = None):
     try:
+        filters = []
+        params = {}
+        if sede_id is not None:
+            filters.append("s.id_sede = :sede_id")
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+            params["centro_id"] = centro_id
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+
         query = text("""
             SELECT s.id_sede, s.nombre, s.direccion, s.codigo_sede, s.centro_id,
             c.codigo_centro AS codigo_centro, c.nombre AS nombre_centro, 
             s.estado
             FROM sedes s
             INNER JOIN centros c ON s.centro_id = c.id_centro
-        """)
-        result = db.execute(query).mappings().all()
+            """ + where_clause)
+        result = db.execute(query, params).mappings().all()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener el listado de sedes: {e}")
@@ -100,7 +119,14 @@ def change_sede_status(db: Session, id_sede: int, nuevo_estado: bool) -> bool:
         logger.error(f"Error al cambiar el estado de la sede {id_sede}: {e}")
         raise Exception("Error de base de datos al cambiar el estado de la sede")
     
-def get_all_sede_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
+def get_all_sede_pag(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    search: str = "",
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     """
     Obtiene los usuarios con paginación.
     También realizar una segunda consulta para contar total de usuarios.
@@ -121,6 +147,14 @@ def get_all_sede_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
                    OR (CASE WHEN s.estado THEN 'activo' ELSE 'inactivo' END) LIKE :search
             """
             query_params["search"] = f"%{search}%"
+
+        if sede_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} s.id_sede = :sede_id"
+            query_params["sede_id"] = sede_id
+
+        if centro_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} s.centro_id = :centro_id"
+            query_params["centro_id"] = centro_id
 
         count_query = text(f"""
             SELECT COUNT(s.id_sede) AS total

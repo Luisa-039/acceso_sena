@@ -11,7 +11,7 @@ from app.schemas.access import AccessCreate
 
 logger = logging.getLogger(__name__)
 
-
+#Función para realizar la búsqueda por número de documento
 def _extract_document_number(scanned_value: str) -> str:
     """
     Normaliza la lectura del escáner y extrae el número de documento.
@@ -101,8 +101,8 @@ def registro_acceso(db:Session, cod_barras:str, area_id_s: int, access: AccessCr
                                 )
                             """)
         params = {
-             **access.model_dump(),
-            "sede_id": 6,
+               **access.model_dump(),
+              "sede_id": access.sede_id,
             "persona_id": result_persona["id_persona"],
             "equipo_id": None,
             "usuario_registro_id": usuario_id,
@@ -219,13 +219,6 @@ def registro_acceso_equipo(db: Session, cod_barras_equip: str, area_id_s: int, a
             logger.warning(f"Area de visita no encontrada: {area_id_s}")
             return "area_not_found"
 
-        sede_query = text("""
-            SELECT sede_id
-            FROM usuarios
-            WHERE id_usuario = :id_user
-        """)
-        sede_result = db.execute(sede_query, {"id_user": usuario_id}).mappings().first()
-
         access_query = text("""
             INSERT INTO registro_accesos(
                 sede_id, persona_id, equipo_id,
@@ -241,7 +234,7 @@ def registro_acceso_equipo(db: Session, cod_barras_equip: str, area_id_s: int, a
 
         params = {
             **access.model_dump(),
-            "sede_id": sede_result["sede_id"],
+            "sede_id": access.sede_id,
             "persona_id": equipo_result["persona_id"],
             "equipo_id": equipo_result["id_equipo"],
             "usuario_registro_id": usuario_id,
@@ -428,8 +421,15 @@ def check_out_equip_serial(db:Session, serial_eq:str, fecha_salida=None):
 
 #obtener datos de persona por scan documento
 
-def get_access_by_id(db:Session, id_acceso_p:int):
+def get_access_by_id(
+    db: Session,
+    id_acceso_p: int,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     try:
+        sede_filter = "AND ra.sede_id = :sede_id" if sede_id is not None else ""
+        centro_filter = "AND s.centro_id = :centro_id" if centro_id is not None else ""
         access_query = text("""
                             SELECT ra.id_acceso, ra.sede_id, ra.persona_id, 
                             ra.equipo_id, ra.area_id, ra.usuario_registro_id,
@@ -442,16 +442,27 @@ def get_access_by_id(db:Session, id_acceso_p:int):
                             LEFT JOIN areas as ar ON ar.id_area = ra.area_id
                             LEFT JOIN sedes as s ON s.id_sede = ra.sede_id
                             WHERE id_acceso = :id_ingreso  
-                        """)
-        result = db.execute(access_query, {"id_ingreso":id_acceso_p}).mappings().first()
+                            """ + sede_filter + " " + centro_filter)
+        params = {"id_ingreso": id_acceso_p}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(access_query, params).mappings().first()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener el registro de acceso por su id: {e}")
         raise Exception("Error de base de datos al obtener el registro de acceso por id")
         
-def get_all_access(db:Session):
+def get_all_access(db: Session, sede_id: int | None = None, centro_id: int | None = None):
     try:
-        access_query = text("""SELECT ra.id_acceso, ra.sede_id, ra.persona_id, 
+        filters = []
+        if sede_id is not None:
+            filters.append("ra.sede_id = :sede_id")
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        access_query = text(f"""SELECT ra.id_acceso, ra.sede_id, ra.persona_id, 
                                 ra.equipo_id, ra.area_id, ra.usuario_registro_id,
                                 ra.tipo_movimiento, ra.fecha_entrada, ra.fecha_salida, 
                                 ar.nombre_area, s.nombre AS nombre_sede, p.nombre_completo,
@@ -461,29 +472,54 @@ def get_all_access(db:Session):
                                 LEFT JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
                                 LEFT JOIN areas as ar ON ar.id_area = ra.area_id
                                 LEFT JOIN sedes as s ON s.id_sede = ra.sede_id
+                                {where_clause}
                                 ORDER BY fecha_entrada DESC
                                 """)
-        result = db.execute(access_query).mappings().all()
+        params = {}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(access_query, params).mappings().all()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener todos los registros: {e}")
         raise Exception("Error de base de datos al obtener todos los registros")
  
-def get_all_access_pag(db: Session, skip:int = 0, limit = 10):
+def get_all_access_pag(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     """
     Obtiene los usuarios con paginación.
     También realizar una segunda consulta para contar total de autorizaciones.
     compatible con PostgreSQL, MySQL y SQLite 
     """
     try: 
-        
-        count_query = text("""SELECT COUNT(id_acceso) AS total 
-                     FROM registro_accesos
+        filters = []
+        if sede_id is not None:
+            filters.append("ra.sede_id = :sede_id")
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        query_params = {"skip": skip, "limit": limit}
+        if sede_id is not None:
+            query_params["sede_id"] = sede_id
+        if centro_id is not None:
+            query_params["centro_id"] = centro_id
+
+        count_query = text(f"""SELECT COUNT(id_acceso) AS total 
+                     FROM registro_accesos ra
+                     LEFT JOIN sedes as s ON s.id_sede = ra.sede_id
+                     {where_clause}
                      """)
-        total_result = db.execute(count_query).scalar()
+        total_result = db.execute(count_query, query_params).scalar()
 
         #2 Consultar usuarios
-        data_query = text("""SELECT ra.id_acceso, ra.sede_id, ra.persona_id, 
+        data_query = text(f"""SELECT ra.id_acceso, ra.sede_id, ra.persona_id, 
                             ra.equipo_id, e.foto_path, ra.area_id, ra.usuario_registro_id,
                             ra.tipo_movimiento, ra.fecha_entrada, ra.fecha_salida, 
                             ar.nombre_area, s.nombre AS nombre_sede, p.nombre_completo,
@@ -493,10 +529,11 @@ def get_all_access_pag(db: Session, skip:int = 0, limit = 10):
                             LEFT JOIN equipos_externos as e ON e.id_equipo = ra.equipo_id
                             LEFT JOIN areas as ar ON ar.id_area = ra.area_id
                             LEFT JOIN sedes as s ON s.id_sede = ra.sede_id
+                            {where_clause}
                             ORDER BY fecha_entrada DESC
                             LIMIT :limit OFFSET :skip
                         """)
-        access_list = db.execute(data_query,{"skip": skip, "limit": limit}).mappings().all()
+        access_list = db.execute(data_query, query_params).mappings().all()
         
         return {
                 "total": total_result or 0,
@@ -509,16 +546,32 @@ def get_all_access_pag(db: Session, skip:int = 0, limit = 10):
 
 def get_dashboard_daily_entries(
     db: Session,
-    sede_id: int,
+    sede_id: int | None,
+    centro_id: int | None = None,
     days: int = 14,
     month: int | None = None,
     year: int | None = None,
+    area_id: int | None = None,
 ):
     """
     Retorna el numero de ingresos por dia para una sede.
     Usa COUNT DISTINCT de persona para evitar duplicados por usuario en el mismo dia.
     """
     try:
+        scope_filters = []
+        if sede_id is not None:
+            scope_filters.append("ra.sede_id = :sede_id")
+        if centro_id is not None:
+            scope_filters.append("s.centro_id = :centro_id")
+        scope_clause = " AND ".join(scope_filters) if scope_filters else "1=1"
+
+        base_params = {}
+        if sede_id is not None:
+            base_params["sede_id"] = sede_id
+        if centro_id is not None:
+            base_params["centro_id"] = centro_id
+
+        area_filter = "AND ra.area_id = :area_id" if area_id is not None else ""
         if month is not None and year is not None:
             if month == 12:
                 fecha_desde = date(year, month, 1)
@@ -532,20 +585,22 @@ def get_dashboard_daily_entries(
                     DATE(ra.fecha_entrada) AS fecha,
                     COUNT(DISTINCT ra.persona_id) AS total_ingresos
                 FROM registro_accesos ra
-                WHERE ra.sede_id = :sede_id
+                                INNER JOIN sedes s ON s.id_sede = ra.sede_id
+                                WHERE """ + scope_clause + """
+                  """ + area_filter + """
                   AND ra.fecha_entrada >= :fecha_desde
                   AND ra.fecha_entrada < :fecha_hasta
                 GROUP BY DATE(ra.fecha_entrada)
                 ORDER BY DATE(ra.fecha_entrada) ASC
             """)
-            rows = db.execute(
-                query,
-                {
-                    "sede_id": sede_id,
-                    "fecha_desde": fecha_desde,
-                    "fecha_hasta": fecha_hasta,
-                },
-            ).mappings().all()
+            params = {
+                "fecha_desde": fecha_desde,
+                "fecha_hasta": fecha_hasta,
+            }
+            params.update(base_params)
+            if area_id is not None:
+                params["area_id"] = area_id
+            rows = db.execute(query, params).mappings().all()
         else:
             fecha_desde = date.today() - timedelta(days=days)
             query = text("""
@@ -553,15 +608,18 @@ def get_dashboard_daily_entries(
                     DATE(ra.fecha_entrada) AS fecha,
                     COUNT(DISTINCT ra.persona_id) AS total_ingresos
                 FROM registro_accesos ra
-                WHERE ra.sede_id = :sede_id
+                INNER JOIN sedes s ON s.id_sede = ra.sede_id
+                WHERE """ + scope_clause + """
+                  """ + area_filter + """
                   AND ra.fecha_entrada >= :fecha_desde
                 GROUP BY DATE(ra.fecha_entrada)
                 ORDER BY DATE(ra.fecha_entrada) ASC
             """)
-            rows = db.execute(
-                query,
-                {"sede_id": sede_id, "fecha_desde": fecha_desde},
-            ).mappings().all()
+            params = {"fecha_desde": fecha_desde}
+            params.update(base_params)
+            if area_id is not None:
+                params["area_id"] = area_id
+            rows = db.execute(query, params).mappings().all()
 
         return [
             {

@@ -8,6 +8,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def _scope_filter(sede_id: int | None, centro_id: int | None, alias: str = "ra", sede_alias: str = "se"):
+    filters = []
+    if sede_id is not None:
+        filters.append(f"{alias}.sede_id = :sede_id")
+    if centro_id is not None:
+        filters.append(f"{sede_alias}.centro_id = :centro_id")
+    if not filters:
+        return ""
+    return "AND " + " AND ".join(filters)
+
 def create_encuesta(db: Session, encuesta: EncuestaCreate) -> Optional[bool]:
     try:
         query = text("""
@@ -25,17 +35,25 @@ def create_encuesta(db: Session, encuesta: EncuestaCreate) -> Optional[bool]:
         logger.error(f"Error al crear la encuesta: {e}")
         raise Exception("Error de base de datos al crear la encuesta")
 
-def get_all_encuestas(db: Session):
+def get_all_encuestas(db: Session, sede_id: int | None = None, centro_id: int | None = None):
     try:
-        query = text("""SELECT e.id_encuesta, e.acceso_id, e.calificacion, e.observacion, e.estado_encuesta,
+        scope_filter = _scope_filter(sede_id, centro_id)
+        query = text(f"""SELECT e.id_encuesta, e.acceso_id, e.calificacion, e.observacion, e.estado_encuesta,
                      p.nombre_completo, ar.nombre_area, se.nombre AS nombre_sede
                      FROM encuestas e
                      INNER JOIN registro_accesos ra ON e.acceso_id = ra.id_acceso
                      INNER JOIN personas p ON ra.persona_id = p.id_persona
                      LEFT JOIN areas ar ON ra.area_id = ar.id_area
-                     LEFT JOIN sedes se ON ra.sede_id = se.id_sede""")
+                     LEFT JOIN sedes se ON ra.sede_id = se.id_sede
+                     WHERE 1=1
+                     {scope_filter}""")
         
-        result = db.execute(query).mappings().all()
+        params = {}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().all()
         
         return result
     except SQLAlchemyError as e:
@@ -43,9 +61,10 @@ def get_all_encuestas(db: Session):
         logger.error(f"Error al registrar la encuesta: {e}")
         raise Exception("Error de base de datos al registrar la encuesta")
 
-def get_encuesta_by_id(db: Session, id: int):
+def get_encuesta_by_id(db: Session, id: int, sede_id: int | None = None, centro_id: int | None = None):
     try:
-        query = text("""SELECT e.id_encuesta, e.acceso_id, e.calificacion, e.observacion, e.estado_encuesta,
+        scope_filter = _scope_filter(sede_id, centro_id)
+        query = text(f"""SELECT e.id_encuesta, e.acceso_id, e.calificacion, e.observacion, e.estado_encuesta,
                      p.nombre_completo, ar.nombre_area, se.nombre AS nombre_sede
                      FROM encuestas e
                      INNER JOIN registro_accesos ra ON e.acceso_id = ra.id_acceso
@@ -53,9 +72,15 @@ def get_encuesta_by_id(db: Session, id: int):
                      LEFT JOIN areas ar ON ra.area_id = ar.id_area
                      LEFT JOIN sedes se ON ra.sede_id = se.id_sede
                      WHERE e.id_encuesta = :id
+                     {scope_filter}
                 """)
         
-        result = db.execute(query, {"id": id}).mappings().first()
+        params = {"id": id}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().first()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener encuesta por su ID: {e}")
@@ -103,7 +128,14 @@ def change_encuesta_status(db: Session, id_encuesta: int, nuevo_estado: bool) ->
         logger.error(f"Error al cambiar el estado de la encuesta {id_encuesta}: {e}")
         raise Exception("Error de base de datos al cambiar el estado de la encuesta")
 
-def get_all_encuestas_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
+def get_all_encuestas_pag(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    search: str = "",
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     """
     Obtiene las encuestas con paginación y búsqueda.
     También realiza una segunda consulta para contar total de encuestas.
@@ -126,6 +158,14 @@ def get_all_encuestas_pag(db: Session, skip:int = 0, limit = 10, search: str = "
                    OR (CASE WHEN e.estado_encuesta THEN 'enviado' ELSE 'pendiente' END) LIKE :search
             """
             query_params["search"] = f"%{search}%"
+
+        if sede_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} ra.sede_id = :sede_id"
+            query_params["sede_id"] = sede_id
+
+        if centro_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} se.centro_id = :centro_id"
+            query_params["centro_id"] = centro_id
 
         count_query = text(f"""
             SELECT COUNT(e.id_encuesta) AS total 

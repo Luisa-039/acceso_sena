@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.schemas.encuestas import EncuestaCreate, EncuestaUpdate, EncuestaOut, PaginatedEncuesta
 from app.schemas.users import UserOut
 from app.crud import encuesta as crud_encuesta
+from app.core.visibility_scope import resolve_visibility_scope
 from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
@@ -40,7 +41,13 @@ def get_encuesta(
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
 
-        encuesta = crud_encuesta.get_encuesta_by_id(db, id)
+        scope = resolve_visibility_scope(db, user_token)
+        encuesta = crud_encuesta.get_encuesta_by_id(
+            db,
+            id,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not encuesta:
             raise HTTPException(status_code=404, detail="Encuesta no encontrada")
         return encuesta
@@ -56,7 +63,12 @@ def get_all_encuestas(
         id_rol = user_token.rol_id
         if not verify_permissions(db, id_rol, modulo, "seleccionar"):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
-        encuestas = crud_encuesta.get_all_encuestas(db)
+        scope = resolve_visibility_scope(db, user_token)
+        encuestas = crud_encuesta.get_all_encuestas(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         return encuestas
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -74,7 +86,13 @@ def update_encuesta_by_id(
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
         # Verificar si la encuesta ya fue enviada
-        encuesta_actual = crud_encuesta.get_encuesta_by_id(db, id)
+        scope = resolve_visibility_scope(db, user_token)
+        encuesta_actual = crud_encuesta.get_encuesta_by_id(
+            db,
+            id,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not encuesta_actual:
             raise HTTPException(status_code=404, detail="Encuesta no encontrada")
         
@@ -101,7 +119,13 @@ def change_encuesta_status(
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
 
         # Verificar si la encuesta ya fue enviada
-        encuesta_actual = crud_encuesta.get_encuesta_by_id(db, id_encuesta)
+        scope = resolve_visibility_scope(db, user_token)
+        encuesta_actual = crud_encuesta.get_encuesta_by_id(
+            db,
+            id_encuesta,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not encuesta_actual:
             raise HTTPException(status_code=404, detail="Encuesta no encontrada")
         
@@ -125,6 +149,7 @@ def get_encuestas_pag(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     search: str = Query("", min_length=0),
+    sede_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ): 
@@ -134,7 +159,15 @@ def get_encuestas_pag(
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
         skip = (page - 1) * page_size
-        data = crud_encuesta.get_all_encuestas_pag(db, skip=skip, limit=page_size, search=search)
+        scope = resolve_visibility_scope(db, user_token, sede_id)
+        data = crud_encuesta.get_all_encuestas_pag(
+            db,
+            skip=skip,
+            limit=page_size,
+            search=search,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         
         total = data["total"]  
         encuestas = data["encuestas"] 

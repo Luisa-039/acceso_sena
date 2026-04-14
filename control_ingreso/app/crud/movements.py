@@ -6,36 +6,93 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def get_movement_serial(db:Session, serial: str):
+def get_movement_by_id(
+    db: Session,
+    id_movimiento: int,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     try:
-        query = text("""SELECT m.id_movimiento_sede, m.equipo_id, m.autorizacion_id,
+        sede_filter = "AND e.sede_id = :sede_id" if sede_id is not None else ""
+        centro_filter = "AND s.centro_id = :centro_id" if centro_id is not None else ""
+        query = text(f"""SELECT m.id_movimiento_sede, m.equipo_id, m.autorizacion_id,
                         m.usuario_registra, m.tipo_id, m.fecha_movimiento, e.serial AS serial_equipo, 
                         e.categoria_id, u.nombre_usuario, c.nombre_categoria, tm.nombre_tipo
                         FROM movimientos_equipos_sede m
                         INNER JOIN equipos_sede_inv e ON m.equipo_id = e.id_equipo_sede
+                        INNER JOIN sedes s ON e.sede_id = s.id_sede
                         INNER JOIN categorias c ON c.id_categoria = e.categoria_id
                         INNER JOIN usuarios as u ON u.id_usuario = m.usuario_registra
                         INNER JOIN tipo_movimientos tm ON tm.id_tipo = m.tipo_id
-                        WHERE e.serial = :serial
+                        WHERE m.id_movimiento_sede = :id_movimiento {sede_filter} {centro_filter}
                     """)
-        result = db.execute(query, {"serial": serial}).mappings().all()
+        params = {"id_movimiento": id_movimiento}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().first()
+        return result
+    except SQLAlchemyError as e:
+        logger.error(f"Error al obtener movimiento por id")
+        raise Exception("Error de base de datos al obtener movimiento")
+
+def get_movement_serial(
+    db: Session,
+    serial: str,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
+    try:
+        sede_filter = "AND e.sede_id = :sede_id" if sede_id is not None else ""
+        centro_filter = "AND s.centro_id = :centro_id" if centro_id is not None else ""
+        query = text(f"""SELECT m.id_movimiento_sede, m.equipo_id, m.autorizacion_id,
+                        m.usuario_registra, m.tipo_id, m.fecha_movimiento, e.serial AS serial_equipo, 
+                        e.categoria_id, u.nombre_usuario, c.nombre_categoria, tm.nombre_tipo
+                        FROM movimientos_equipos_sede m
+                        INNER JOIN equipos_sede_inv e ON m.equipo_id = e.id_equipo_sede
+                        INNER JOIN sedes s ON e.sede_id = s.id_sede
+                        INNER JOIN categorias c ON c.id_categoria = e.categoria_id
+                        INNER JOIN usuarios as u ON u.id_usuario = m.usuario_registra
+                        INNER JOIN tipo_movimientos tm ON tm.id_tipo = m.tipo_id
+                        WHERE e.serial = :serial {sede_filter} {centro_filter}
+                    """)
+        params = {"serial": serial}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().all()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener movimiento por serial")
         raise Exception("Error de base de datos al obtener movimiento")
     
-def get_all_movements(db: Session):
+def get_all_movements(db: Session, sede_id: int | None = None, centro_id: int | None = None):
     try:
-        query = text("""SELECT m.id_movimiento_sede, m.equipo_id, m.autorizacion_id,
+        filters = []
+        if sede_id is not None:
+            filters.append("e.sede_id = :sede_id")
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        query = text(f"""SELECT m.id_movimiento_sede, m.equipo_id, m.autorizacion_id,
                         m.usuario_registra, m.tipo_id, m.fecha_movimiento, e.serial AS serial_equipo, 
                         e.categoria_id, u.nombre_usuario, c.nombre_categoria, tm.nombre_tipo
                         FROM movimientos_equipos_sede m
                         INNER JOIN equipos_sede_inv e ON m.equipo_id = e.id_equipo_sede
+                        INNER JOIN sedes s ON e.sede_id = s.id_sede
                         INNER JOIN categorias c ON c.id_categoria = e.categoria_id
                         INNER JOIN usuarios as u ON u.id_usuario = m.usuario_registra
                         INNER JOIN tipo_movimientos tm ON tm.id_tipo = m.tipo_id
+                        {where_clause}
                     """)
-        result = db.execute(query).mappings().all()
+        params = {}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().all()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener el listado de movimientos: {e}")
@@ -58,7 +115,14 @@ def update_movement_by_id(db: Session, id_movimiento: int, tipo_id: int) -> bool
         logger.error(f"Error al actualizar los movimientos: {e}")
         raise Exception("Error de base de datos al actualizar los movimientos")
 
-def get_all_movements_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
+def get_all_movements_pag(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    search: str = "",
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     """
     Obtiene los usuarios con paginación.
     También realizar una segunda consulta para contar total de autorizaciones.
@@ -80,10 +144,19 @@ def get_all_movements_pag(db: Session, skip:int = 0, limit = 10, search: str = "
             """
             query_params["search"] = f"%{search}%"
 
+        if sede_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} e.sede_id = :sede_id"
+            query_params["sede_id"] = sede_id
+
+        if centro_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} s.centro_id = :centro_id"
+            query_params["centro_id"] = centro_id
+
         count_query = text(f"""
             SELECT COUNT(m.id_movimiento_sede) AS total
             FROM movimientos_equipos_sede m
             INNER JOIN equipos_sede_inv e ON m.equipo_id = e.id_equipo_sede
+            INNER JOIN sedes s ON e.sede_id = s.id_sede
             INNER JOIN categorias c ON c.id_categoria = e.categoria_id
             INNER JOIN usuarios as u ON u.id_usuario = m.usuario_registra
             INNER JOIN tipo_movimientos tm ON tm.id_tipo = m.tipo_id
@@ -98,6 +171,7 @@ def get_all_movements_pag(db: Session, skip:int = 0, limit = 10, search: str = "
             e.categoria_id, u.nombre_usuario, c.nombre_categoria, tm.nombre_tipo
             FROM movimientos_equipos_sede m
             INNER JOIN equipos_sede_inv e ON m.equipo_id = e.id_equipo_sede
+            INNER JOIN sedes s ON e.sede_id = s.id_sede
             INNER JOIN categorias c ON c.id_categoria = e.categoria_id
             INNER JOIN usuarios as u ON u.id_usuario = m.usuario_registra
             INNER JOIN tipo_movimientos tm ON tm.id_tipo = m.tipo_id

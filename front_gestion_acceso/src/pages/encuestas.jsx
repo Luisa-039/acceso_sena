@@ -13,11 +13,13 @@ import EncuestaCreateModal from "@/components/encuestas/encuesta_create";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
 import { alerts } from "@/hooks/alerts";
+import { useSede } from "@/context/sedeContext";
 
 function Encuestas() {
   const [encuestas, setEncuestas] = useState([]);
   const [openCreate, setOpenCreate] = useState(false);
   const { permisos, isAdmin } = usePermissions(MODULOS.ENCUESTAS);
+  const { effectiveSedeId } = useSede();
   const canInsert = isAdmin || permisos.insertar;
   const canUpdate = isAdmin || permisos.actualizar;
   const canDelete = isAdmin || permisos.borrar;
@@ -25,7 +27,13 @@ function Encuestas() {
 
 
   const fetchencuestas = async () => {
-    const res = await apiFetch(`encuestas/all_encuestas-pag`);
+    const params = new URLSearchParams();
+
+    if (effectiveSedeId) {
+      params.append("sede_id", String(effectiveSedeId));
+    }
+
+    const res = await apiFetch(`encuestas/all_encuestas-pag?${params.toString()}`);
     setEncuestas(Array.isArray(res) ? res : (res.encuestas || []));
   };
 

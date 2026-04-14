@@ -30,50 +30,85 @@ def create_equipment_sede(db: Session,
         logger.error(f"Error al registrar el equipo de la sede: {e}")
         raise Exception("Error de base de datos al registrar el equipo de la sede") 
 
-def get_equipment_sede_by_cod_barras(db: Session, codigo_barras: str):
+def get_equipment_sede_by_cod_barras(
+    db: Session,
+    codigo_barras: str,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     try:
-        query = text("""SELECT eq.id_equipo_sede, eq.serial, eq.area_id,eq.codigo_barras_equipo, eq.descripcion,
+        sede_filter = "AND eq.sede_id = :sede_id" if sede_id is not None else ""
+        centro_filter = "AND s.centro_id = :centro_id" if centro_id is not None else ""
+        query = text(f"""SELECT eq.id_equipo_sede, eq.serial, eq.area_id,eq.codigo_barras_equipo, eq.descripcion,
                           eq.categoria_id, eq.marca, eq.modelo, eq.sede_id, eq.fecha_registro,a.nombre_area,
                           eq.estado, s.nombre as nombre_sede, c.nombre_categoria
                           FROM equipos_sede_inv as eq
                           INNER JOIN sedes as s ON eq.sede_id = s.id_sede
                           INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
                           INNER JOIN areas as a ON eq.area_id = a.id_area
-                          WHERE codigo_barras_equipo = :codigo_barras""")
-        result = db.execute(query, {"codigo_barras": codigo_barras}).mappings().first()
+                          WHERE codigo_barras_equipo = :codigo_barras {sede_filter} {centro_filter}""")
+        params = {"codigo_barras": codigo_barras}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().first()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener equipo por código de barras: {e}")
         raise Exception("Error de base de datos al obtener el equipo por código de barras")
 
-def get_equipment_sede_by_serial(db: Session, serial_eq: str):
+def get_equipment_sede_by_serial(
+    db: Session,
+    serial_eq: str,
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     try:
-        query = text("""SELECT eq.id_equipo_sede, eq.serial, eq.area_id,eq.codigo_barras_equipo, eq.descripcion,
+        sede_filter = "AND eq.sede_id = :sede_id" if sede_id is not None else ""
+        centro_filter = "AND s.centro_id = :centro_id" if centro_id is not None else ""
+        query = text(f"""SELECT eq.id_equipo_sede, eq.serial, eq.area_id,eq.codigo_barras_equipo, eq.descripcion,
                           eq.categoria_id, eq.marca, eq.modelo, eq.sede_id, eq.fecha_registro,
                           eq.estado, s.nombre as nombre_sede, c.nombre_categoria, a.nombre_area
                           FROM equipos_sede_inv as eq
                           INNER JOIN sedes as s ON eq.sede_id = s.id_sede
                           INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
                           INNER JOIN areas as a ON eq.area_id = a.id_area
-                     WHERE serial = :equipo_serial""")
-        result = db.execute(query, {"equipo_serial": serial_eq}).mappings().first()
+                     WHERE serial = :equipo_serial {sede_filter} {centro_filter}""")
+        params = {"equipo_serial": serial_eq}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().first()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener equipo por id: {e}")
         raise Exception("Error de base de datos al obtener el equipo por id")
 
-def get_all_equipments_sede(db: Session):
+def get_all_equipments_sede(db: Session, sede_id: int | None = None, centro_id: int | None = None):
     try:
-        query = text("""SELECT eq.id_equipo_sede, eq.serial, eq.area_id,eq.codigo_barras_equipo, eq.descripcion,
+        filters = []
+        if sede_id is not None:
+            filters.append("eq.sede_id = :sede_id")
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        query = text(f"""SELECT eq.id_equipo_sede, eq.serial, eq.area_id,eq.codigo_barras_equipo, eq.descripcion,
                           eq.categoria_id, eq.marca, eq.modelo, eq.sede_id, eq.fecha_registro,
                           eq.estado, s.nombre as nombre_sede, c.nombre_categoria, a.nombre_area
                           FROM equipos_sede_inv as eq
                           INNER JOIN sedes as s ON eq.sede_id = s.id_sede
                           INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
                           INNER JOIN areas as a ON eq.area_id = a.id_area
+                          {where_clause}
                      """)
-        result = db.execute(query).mappings().all()
-        print([e.estado for e in result])
+        params = {}
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().all()
         return result
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener los datos de los equipos: {e}")
@@ -143,7 +178,14 @@ def update_equip_sede_by_id(db: Session, equipo_id: int, equipment: Equipo_sedeU
         logger.error(f"Error al actualizar el id del equipo {equipo_id}: {e}")
         raise Exception("Error de base de datos al actualizar el id del equipo")
      
-def get_all_equipements_sede_pag(db: Session, skip:int = 0, limit = 10, search: str = ""):
+def get_all_equipements_sede_pag(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    search: str = "",
+    sede_id: int | None = None,
+    centro_id: int | None = None,
+):
     """
     Obtiene los equipos con paginación.
     También realizar una segunda consulta para contar total de equipos.
@@ -168,6 +210,14 @@ def get_all_equipements_sede_pag(db: Session, skip:int = 0, limit = 10, search: 
                    OR eq.estado LIKE :search
             """
             query_params["search"] = f"%{search}%"
+
+        if sede_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} eq.sede_id = :sede_id"
+            query_params["sede_id"] = sede_id
+
+        if centro_id is not None:
+            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} s.centro_id = :centro_id"
+            query_params["centro_id"] = centro_id
 
         count_query = text(f"""
             SELECT COUNT(eq.id_equipo_sede) AS total

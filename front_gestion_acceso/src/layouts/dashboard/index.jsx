@@ -46,6 +46,8 @@ function DashboardPage() {
   const [printPayload, setPrintPayload] = useState({ title: "", image: "", details: "" });
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [areas, setAreas] = useState([]);
+  const [selectedAreaId, setSelectedAreaId] = useState("");
   const [consumiblesSummary, setConsumiblesSummary] = useState({
     total: 0,
     activos: 0,
@@ -74,6 +76,34 @@ function DashboardPage() {
     return [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
   }, [now]);
 
+  const selectedAreaName = useMemo(() => {
+    if (!selectedAreaId) return "Todas las areas";
+    const found = areas.find((area) => Number(area.id_area) === Number(selectedAreaId));
+    return found?.nombre_area || "Area seleccionada";
+  }, [areas, selectedAreaId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchAreas() {
+      try {
+        const result = await apiFetch("area/all/areas");
+        if (!isMounted) return;
+        const activeAreas = Array.isArray(result) ? result.filter((area) => area?.estado) : [];
+        setAreas(activeAreas);
+      } catch {
+        if (!isMounted) return;
+        setAreas([]);
+      }
+    }
+
+    fetchAreas();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -88,6 +118,10 @@ function DashboardPage() {
 
         if (effectiveSedeId) {
           params.append("sede_id", String(effectiveSedeId));
+        }
+
+        if (selectedAreaId) {
+          params.append("area_id", String(selectedAreaId));
         }
 
         const [consumiblesResult, entriesResult] = await Promise.allSettled([
@@ -121,17 +155,12 @@ function DashboardPage() {
       }
     }
 
-    if (effectiveSedeId) {
-      fetchDashboardData();
-    } else {
-      setLoading(false);
-      setError("No hay una sede validada para este usuario");
-    }
+    fetchDashboardData();
 
     return () => {
       isMounted = false;
     };
-  }, [effectiveSedeId, selectedMonth, selectedYear]);
+  }, [effectiveSedeId, selectedMonth, selectedYear, selectedAreaId]);
 
   const topDailyEntries = useMemo(
     () =>
@@ -276,7 +305,7 @@ function DashboardPage() {
 
 
 
-      {!loading && !error && (
+      {!loading && (
         <MDBox display="flex" flexDirection="column" gap={3}>
           <Card sx={{ height: 420 }}>
             <MDBox p={3}>
@@ -332,7 +361,7 @@ function DashboardPage() {
             <MDBox p={3}>
               <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <MDTypography variant="h6" mb={1}>
-                  Personas ingresadas por dia en la sede {selectedSedeName} en {monthNames[selectedMonth - 1]} {selectedYear}
+                  Personas ingresadas por dia en la sede {selectedSedeName} en {selectedAreaName} durante {monthNames[selectedMonth - 1]} {selectedYear}
                 </MDTypography>
                 
                 <MDBox mb={2}>
@@ -381,6 +410,31 @@ function DashboardPage() {
                     {yearOptions.map((year) => (
                       <MenuItem key={year} value={year}>
                         {year}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 220 }}>
+                  <InputLabel id="area-select-label" shrink>
+                    Área
+                  </InputLabel>
+                  <Select
+                    id="area-select"
+                    labelId="area-select-label"
+                    value={selectedAreaId}
+                    label="Área"
+                    displayEmpty
+                    renderValue={(value) => {
+                      if (!value) return "Selecciona un área";
+                      const selected = areas.find((area) => Number(area.id_area) === Number(value));
+                      return selected?.nombre_area || "Área";
+                    }}
+                    onChange={(e) => setSelectedAreaId(e.target.value)}
+                  >
+                    <MenuItem value="">Todas las áreas</MenuItem>
+                    {areas.map((area) => (
+                      <MenuItem key={area.id_area} value={area.id_area}>
+                        {area.nombre_area}
                       </MenuItem>
                     ))}
                   </Select>

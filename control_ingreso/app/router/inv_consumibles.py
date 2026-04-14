@@ -7,6 +7,7 @@ from app.router.dependencies import get_current_user
 from app.schemas.users import UserOut
 from app.schemas.inv_consumibles import Inv_consumibleCreate, Inv_consumibleUpdate, Inv_consumibleEstado, Inv_consumibleOut, PaginatedInv_consumibles
 from app.crud import inv_consumibles as crud_inv_consumibles
+from app.core.visibility_scope import resolve_visibility_scope, resolve_write_sede_id
 from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
@@ -22,6 +23,10 @@ def create_consumible(
         id_rol = user_token.rol_id       
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
+
+        consumible = consumible.model_copy(
+            update={"sede_id": resolve_write_sede_id(db, user_token, consumible.sede_id)}
+        )
         
         crud_inv_consumibles.create_inv_consumible(db, consumible)
         return {"message": "Consumible registrado correctamente"}
@@ -37,7 +42,13 @@ def scan_consumible(id_consumible: int,
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        equipo = crud_inv_consumibles.get_inv_consumible_by_id(db, id_consumible)
+        scope = resolve_visibility_scope(db, user_token)
+        equipo = crud_inv_consumibles.get_inv_consumible_by_id(
+            db,
+            id_consumible,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not equipo:
             raise HTTPException(status_code=404, detail="Consumible no encontrado")
         return equipo
@@ -53,7 +64,12 @@ def scan_equipment(db: Session = Depends(get_db),
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        equipo = crud_inv_consumibles.get_all_inv_consumibles(db)
+        scope = resolve_visibility_scope(db, user_token)
+        equipo = crud_inv_consumibles.get_all_inv_consumibles(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not equipo:
             raise HTTPException(status_code=404, detail="Consumibles no encontrados")
         return equipo
@@ -69,6 +85,11 @@ def update_consumible_by_id(id_consumible: int,
         id_rol = user_token.rol_id
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
+        if consumible.sede_id is not None:
+            consumible = consumible.model_copy(
+                update={"sede_id": resolve_write_sede_id(db, user_token, consumible.sede_id)}
+            )
         
         success = crud_inv_consumibles.update_inv_consumible_by_id(db, id_consumible, consumible)
         if not success:
@@ -102,6 +123,7 @@ def get_consumibles_pag(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     search: str = Query("", min_length=0),
+    sede_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ): 
@@ -111,7 +133,15 @@ def get_consumibles_pag(
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
         skip = (page - 1) * page_size
-        data = crud_inv_consumibles.get_all_consumible_pag(db, skip=skip, limit=page_size, search=search)
+        scope = resolve_visibility_scope(db, user_token, sede_id)
+        data = crud_inv_consumibles.get_all_consumible_pag(
+            db,
+            skip=skip,
+            limit=page_size,
+            search=search,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
 
         total = data["total"]  
         consumibles = data["consumibles"]
@@ -138,15 +168,16 @@ def get_dashboard_consumibles_summary(
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
 
-        requested_sede_id = user_token.sede_id
-        if sede_id is not None:
-            if user_token.rol_id not in (1, 2) and sede_id != user_token.sede_id:
-                raise HTTPException(status_code=403, detail="No autorizado para consultar otra sede")
-            requested_sede_id = sede_id
+        scope = resolve_visibility_scope(db, user_token, sede_id)
 
-        data = crud_inv_consumibles.get_dashboard_consumibles_summary(db, requested_sede_id)
+        data = crud_inv_consumibles.get_dashboard_consumibles_summary(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         return {
-            "sede_id": requested_sede_id,
+            "sede_id": scope["sede_id"],
+            "centro_id": scope["centro_id"],
             "sede_nombre": user_token.nombre,
             **data,
         }

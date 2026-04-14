@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.schemas.access import AccessCreate, AccessOut, PaginatedAccess
 from app.schemas.users import UserOut
 from app.crud import access as crud_access
+from app.core.visibility_scope import resolve_visibility_scope, resolve_write_sede_id
 from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
@@ -27,6 +28,10 @@ def create_center(
         id_usuario = user_token.id_usuario
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
+
+        registro_acc = registro_acc.model_copy(
+            update={"sede_id": resolve_write_sede_id(db, user_token, registro_acc.sede_id)}
+        )
         resultado = crud_access.registro_acceso(db=db,
                                                 cod_barras=cod_barras_p,
                                                 access=registro_acc,
@@ -78,6 +83,10 @@ def create_center_by_equipo(
         id_usuario = user_token.id_usuario
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail='Usuario no autorizado')
+
+        registro_acc = registro_acc.model_copy(
+            update={"sede_id": resolve_write_sede_id(db, user_token, registro_acc.sede_id)}
+        )
 
         resultado = crud_access.registro_acceso_equipo(
             db=db,
@@ -199,7 +208,13 @@ def consulta_by_id_access( id_registro: int,
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
         
-        registro_ext = crud_access.get_access_by_id(db, id_registro)
+        scope = resolve_visibility_scope(db, user_token)
+        registro_ext = crud_access.get_access_by_id(
+            db,
+            id_registro,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not registro_ext:
             raise HTTPException(status_code=404, detail="registro no encontrado")
         return registro_ext
@@ -217,7 +232,12 @@ def consulta_by_doc_person(
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
         
-        registro_ext = crud_access.get_all_access(db)
+        scope = resolve_visibility_scope(db, user_token)
+        registro_ext = crud_access.get_all_access(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not registro_ext:
             raise HTTPException(status_code=404, detail="registros no encontrados")
         return registro_ext
@@ -258,6 +278,7 @@ def check_out_equipo_serial(
 def get_access_pag(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
+    sede_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -267,9 +288,14 @@ def get_access_pag(
         raise HTTPException(status_code=401, detail="Usuario no autorizado")
 
     skip = (page - 1) * page_size
+    scope = resolve_visibility_scope(db, user_token, sede_id)
 
     data = crud_access.get_all_access_pag(
-        db, skip=skip, limit=page_size
+        db,
+        skip=skip,
+        limit=page_size,
+        sede_id=scope["sede_id"],
+        centro_id=scope["centro_id"],
     )
 
     total = data["total"]
@@ -290,6 +316,7 @@ def get_dashboard_daily_entries(
     month: int | None = Query(None, ge=1, le=12),
     year: int | None = Query(None, ge=2000, le=2100),
     sede_id: int | None = Query(None, ge=1),
+    area_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -304,22 +331,22 @@ def get_dashboard_daily_entries(
                 detail="Debe enviar month y year juntos para filtrar por mes",
             )
 
-        requested_sede_id = user_token.sede_id
-        if sede_id is not None:
-            if user_token.rol_id not in (1, 2) and sede_id != user_token.sede_id:
-                raise HTTPException(status_code=403, detail="No autorizado para consultar otra sede")
-            requested_sede_id = sede_id
+        scope = resolve_visibility_scope(db, user_token, sede_id)
 
         data = crud_access.get_dashboard_daily_entries(
             db=db,
-            sede_id=requested_sede_id,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
             days=days,
             month=month,
             year=year,
+            area_id=area_id,
         )
 
         return {
-            "sede_id": requested_sede_id,
+            "sede_id": scope["sede_id"],
+            "centro_id": scope["centro_id"],
+            "area_id": area_id,
             "days": days,
             "month": month,
             "year": year,

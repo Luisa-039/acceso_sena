@@ -17,6 +17,7 @@ import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import EquipoCreateModal from "@/components/equipments/equipments_create";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { useSede } from "@/context/sedeContext";
 
 function Access() {
   const [identifier, setIdentifier] = useState("");
@@ -32,6 +33,7 @@ function Access() {
   const [openEquipmentModal, setOpenEquipmentModal] = useState(false);
   const [equipmentDraft, setEquipmentDraft] = useState(null);
   const [brokenImages, setBrokenImages] = useState({});
+  const { effectiveSedeId } = useSede();
   const [createForm, setCreateForm] = useState({
     tipo_persona: "",
     nombre_completo: "",
@@ -110,6 +112,10 @@ function Access() {
         page_size: String(pageSize),
       });
 
+      if (effectiveSedeId) {
+        params.append("sede_id", String(effectiveSedeId));
+      }
+
       const res = await apiFetch(`access/paginated?${params.toString()}`);
       setAccessRows(res.access || []);
       setTotal(res.total_access || 0);
@@ -125,11 +131,11 @@ function Access() {
 
   useEffect(() => {
     fetchAccess();
-  }, [page, pageSize, canSelect]);
+  }, [page, pageSize, canSelect, effectiveSedeId]);
 
   const createAccessByDocument = async (documento) => {
     const payload = {
-      sede_id: 0,
+      sede_id: effectiveSedeId || 0,
       persona_id: 0,
       equipo_id: 0,
       usuario_registro_id: 0,

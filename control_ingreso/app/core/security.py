@@ -27,6 +27,7 @@ def verify_token(token: str):
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         user_id = payload.get("sub")
+
         return int(user_id) if user_id is not None else None
     except jwt.ExpiredSignatureError:
         return None

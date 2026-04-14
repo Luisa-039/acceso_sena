@@ -7,6 +7,7 @@ from app.router.dependencies import get_current_user
 from app.schemas.users import UserOut
 from app.schemas.equipments_sede import Equipo_sedeCreate, Equipo_sedeUpdate, Equipo_sedeOut, Estado_equip_sede, PaginatedEquipos_sede
 from app.crud import equipments_sede as crud_equipments_sede
+from app.core.visibility_scope import resolve_visibility_scope, resolve_write_sede_id
 from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
@@ -24,13 +25,29 @@ def create_equipo(
         id_rol = user_token.rol_id       
         if not verify_permissions(db, id_rol, modulo, 'insertar'):
             raise HTTPException(status_code=401, detail= 'Usuario no autorizado')
+
+        Equipo = Equipo.model_copy(
+            update={"sede_id": resolve_write_sede_id(db, user_token, Equipo.sede_id)}
+        )
         
+        scope = resolve_visibility_scope(db, user_token, Equipo.sede_id)
+
         if Equipo.serial:
-            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(db, Equipo.serial)
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(
+                db,
+                Equipo.serial,
+                sede_id=scope["sede_id"],
+                centro_id=scope["centro_id"],
+            )
             if existing_equipo:
                 raise HTTPException(status_code=400, detail="Ya existe un equipo con ese número de serial")
         if Equipo.codigo_barras_equipo:
-            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(db, Equipo.codigo_barras_equipo)
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(
+                db,
+                Equipo.codigo_barras_equipo,
+                sede_id=scope["sede_id"],
+                centro_id=scope["centro_id"],
+            )
             if existing_equipo:
                 raise HTTPException(status_code=400, detail="Ya existe un equipo con ese código de barras")
             
@@ -50,7 +67,13 @@ def scan_equipment(cod_barras: str,
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(db, cod_barras)
+        scope = resolve_visibility_scope(db, user_token)
+        equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(
+            db,
+            cod_barras,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not equipo:
             raise HTTPException(status_code=404, detail="Equipo no encontrado")
         return equipo
@@ -68,7 +91,13 @@ def get_by_serial_equip(serial: str,
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        equipo = crud_equipments_sede.get_equipment_sede_by_serial(db, serial)
+        scope = resolve_visibility_scope(db, user_token)
+        equipo = crud_equipments_sede.get_equipment_sede_by_serial(
+            db,
+            serial,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not equipo:
             raise HTTPException(status_code=404, detail="Equipo no encontrado")
         return equipo
@@ -84,7 +113,12 @@ def scan_equipment(db: Session = Depends(get_db),
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        equipo = crud_equipments_sede.get_all_equipments_sede(db)
+        scope = resolve_visibility_scope(db, user_token)
+        equipo = crud_equipments_sede.get_all_equipments_sede(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not equipo:
             raise HTTPException(status_code=404, detail="Equipos no encontrados")
         return equipo
@@ -102,13 +136,30 @@ def update_equip_by_id(id_equip: int,
         id_rol = user_token.rol_id
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
+        if equip.sede_id is not None:
+            equip = equip.model_copy(
+                update={"sede_id": resolve_write_sede_id(db, user_token, equip.sede_id)}
+            )
         
+        scope = resolve_visibility_scope(db, user_token, equip.sede_id)
+
         if equip.serial:
-            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(db, equip.serial)
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(
+                db,
+                equip.serial,
+                sede_id=scope["sede_id"],
+                centro_id=scope["centro_id"],
+            )
             if existing_equipo:
                 raise HTTPException(status_code=400, detail="Ya existe un equipo con ese número de serial")
         if equip.codigo_barras_equipo:
-            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(db, equip.codigo_barras_equipo)
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(
+                db,
+                equip.codigo_barras_equipo,
+                sede_id=scope["sede_id"],
+                centro_id=scope["centro_id"],
+            )
             if existing_equipo:
                 raise HTTPException(status_code=400, detail="Ya existe un equipo con ese código de barras")
             
@@ -152,13 +203,30 @@ def update_equip(codigo_barras_equip: str,
         id_rol = user_token.rol_id
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
+        if equip.sede_id is not None:
+            equip = equip.model_copy(
+                update={"sede_id": resolve_write_sede_id(db, user_token, equip.sede_id)}
+            )
         
+        scope = resolve_visibility_scope(db, user_token, equip.sede_id)
+
         if equip.serial:
-            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(db, equip.serial)
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_serial(
+                db,
+                equip.serial,
+                sede_id=scope["sede_id"],
+                centro_id=scope["centro_id"],
+            )
             if existing_equipo:
                 raise HTTPException(status_code=400, detail="Ya existe un equipo con ese número de serial")
         if equip.codigo_barras_equipo:
-            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(db, equip.codigo_barras_equipo)
+            existing_equipo = crud_equipments_sede.get_equipment_sede_by_cod_barras(
+                db,
+                equip.codigo_barras_equipo,
+                sede_id=scope["sede_id"],
+                centro_id=scope["centro_id"],
+            )
             if existing_equipo:
                 raise HTTPException(status_code=400, detail="Ya existe un equipo con ese código de barras")
 
@@ -175,6 +243,7 @@ def get_equipements_pag(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     search: str = Query("", min_length=0),
+    sede_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ): 
@@ -185,7 +254,15 @@ def get_equipements_pag(
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
         skip = (page - 1) * page_size
-        data = crud_equipments_sede.get_all_equipements_sede_pag(db, skip=skip, limit=page_size, search=search)
+        scope = resolve_visibility_scope(db, user_token, sede_id)
+        data = crud_equipments_sede.get_all_equipements_sede_pag(
+            db,
+            skip=skip,
+            limit=page_size,
+            search=search,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
 
         total = data["total"]  
         equipos = data["equipos"]

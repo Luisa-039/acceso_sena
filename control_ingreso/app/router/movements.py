@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.schemas.movements import MovementCreate, MovementUpdate, MovementOut, PaginatedMovements
 from app.schemas.users import UserOut
 from app.crud import movements as crud_movement
+from app.core.visibility_scope import resolve_visibility_scope
 from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter()
@@ -40,7 +41,13 @@ def get_movement_by_id(
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="usuario no autorizado")
 
-        movimiento = crud_movement.get_movement_by_id(db, id_movimiento)
+        scope = resolve_visibility_scope(db, user_token)
+        movimiento = crud_movement.get_movement_by_id(
+            db,
+            id_movimiento,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not movimiento:
             raise HTTPException(status_code=404, detail="Movimiento no encontrado")
         return movimiento
@@ -57,7 +64,12 @@ def all_movements(db: Session = Depends(get_db),
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        movimiento = crud_movement.get_all_movements(db)
+        scope = resolve_visibility_scope(db, user_token)
+        movimiento = crud_movement.get_all_movements(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not movimiento:
             raise HTTPException(status_code=404, detail="Movimientos no encontrados")
         return movimiento
@@ -76,7 +88,13 @@ def movement_serial(
         if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        movimiento = crud_movement.get_movement_serial(db, serial)
+        scope = resolve_visibility_scope(db, user_token)
+        movimiento = crud_movement.get_movement_serial(
+            db,
+            serial,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+        )
         if not movimiento:
             raise HTTPException(status_code=404, detail="Movimientos no encontrados")
         return movimiento
@@ -107,6 +125,7 @@ def get_movements_pag(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     search: str = Query("", min_length=0),
+    sede_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
     user_token: UserOut = Depends(get_current_user)
 ):
@@ -117,7 +136,15 @@ def get_movements_pag(
 
     skip = (page - 1) * page_size
 
-    data = crud_movement.get_all_movements_pag(db, skip=skip, limit=page_size, search=search)
+    scope = resolve_visibility_scope(db, user_token, sede_id)
+    data = crud_movement.get_all_movements_pag(
+        db,
+        skip=skip,
+        limit=page_size,
+        search=search,
+        sede_id=scope["sede_id"],
+        centro_id=scope["centro_id"],
+    )
 
     total = data["total"]
     movements = data["movements"]

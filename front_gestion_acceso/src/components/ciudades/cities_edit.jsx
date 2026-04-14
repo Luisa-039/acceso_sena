@@ -100,7 +100,7 @@ export default function CityEditModal({ oncancel, cities, onSave }) {
         <MDButton onClick={oncancel} color="secondary" variant="text">
           Cancelar
         </MDButton>
-        <MDButton sx={{background: "green"}} type="submit" variant="gradient">
+        <MDButton color="success" type="submit" variant="gradient">
           Actualizar
         </MDButton>
       </MDBox>

@@ -19,7 +19,9 @@ export function SedeProvider({ children }) {
   );
   const [loadingSedes, setLoadingSedes] = useState(false);
 
-  const canSelectSede = useMemo(() => [1, 2].includes(Number(idRol)), [idRol]);
+  const roleId = Number(idRol);
+  const canSelectSede = useMemo(() => [1, 2, 3, 6].includes(Number(idRol)), [idRol]);
+  const canUseAllSedes = useMemo(() => [1, 2, 3, 6].includes(Number(idRol)), [idRol]);
 
   const setSelectedSedeId = (value) => {
     const parsed = toNumberOrNull(value);
@@ -64,8 +66,8 @@ export function SedeProvider({ children }) {
 
         const fallbackSedeId =
           (savedSedeId && availableIds.has(savedSedeId) && savedSedeId) ||
-          (userSedeId && availableIds.has(userSedeId) && userSedeId) ||
-          toNumberOrNull(sedesList[0]?.id_sede);
+          (canUseAllSedes ? null : ((userSedeId && availableIds.has(userSedeId) && userSedeId) ||
+          toNumberOrNull(sedesList[0]?.id_sede)));
 
         setSelectedSedeId(fallbackSedeId);
       } catch {
@@ -91,11 +93,15 @@ export function SedeProvider({ children }) {
     : toNumberOrNull(user?.sede_id);
 
   const selectedSedeName = useMemo(() => {
-    if (!effectiveSedeId) return "No definida";
+    if (!effectiveSedeId) {
+      if (roleId === 2 || roleId === 3) return "Todas las sedes del centro";
+      if (roleId === 1 || roleId === 6) return "Todas las sedes";
+      return "No definida";
+    }
 
     const found = (sedes || []).find((s) => Number(s.id_sede) === Number(effectiveSedeId));
     return found?.nombre || user?.nombre || "No definida";
-  }, [effectiveSedeId, sedes, user?.nombre]);
+  }, [effectiveSedeId, sedes, user?.nombre, roleId]);
 
   const value = {
     sedes,
