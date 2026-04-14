@@ -23,7 +23,7 @@ import Modulos from "@/pages/modulos";
 import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
 import Encuestas from "@/pages/encuestas";
-import Consumibles from "@/pages/inv_conumibles";
+import Consumibles from "@/pages/inv_consumibles";
 import Access_register from "@/pages/access";
 import AccordionPage from "@/pages/accordionPage";
 

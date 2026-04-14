@@ -13,7 +13,12 @@ import Auth_salidaCreateModal from "@/components/auth_salida/auth_salida_create"
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils/exportUtils";
+import MDInput from "@/components/MDInput";
+import MenuItem from "@mui/material/MenuItem";
 import { alerts } from "@/hooks/alerts";
+import { useSede } from "@/context/sedeContext";
+
 
 
 function Auth_salida() {
@@ -24,8 +29,11 @@ function Auth_salida() {
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportFormat, setExportFormat] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.AUTORIZACION_SALIDA);
+  const { effectiveSedeId } = useSede();
   const canInsert = isAdmin || permisos.insertar;
+  const canSelect = isAdmin || permisos.seleccionar
   const canUpdate = isAdmin || permisos.actualizar;
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
@@ -39,6 +47,10 @@ function Auth_salida() {
 
     if (searchTerm.trim()) {
       params.append("search", searchTerm.trim());
+    }
+
+    if (effectiveSedeId) {
+      params.append("sede_id", String(effectiveSedeId));
     }
 
     const res = await apiFetch(`autorizacion_salida/paginated?${params.toString()}`)
@@ -61,7 +73,7 @@ function Auth_salida() {
 
   useEffect(() => {
     fetchAuth_salida();
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, effectiveSedeId, canSelect]);
 
   const handleSearchAuthSalida = (value) => {
     setPage(0);
@@ -249,6 +261,59 @@ function Auth_salida() {
     auth_salida
   }));
 
+  const exportColumns = [
+    { header: "Autorizado por", key: "nombre_usuario" },
+    { header: "Tipo equipo", key: "nombre_categoria" },
+    { header: "N. serie", key: "serial" },
+    { header: "Destino", key: "destino" },
+    { header: "Motivo", key: "motivo" },
+    {
+      header: "Estado",
+      key: (row) => (row.estado ? "Autorizado" : "Pendiente"),
+    },
+    { header: "Fecha autorizacion", key: "fecha_autorizacion", format: formatDateTime },
+  ];
+
+  const handleExport = (format) => {
+    const dateTag = new Date().toISOString().slice(0, 10);
+
+    if (!auth_salida.length) {
+      alerts.warning("No hay datos para exportar");
+      return;
+    }
+
+    try {
+      if (format === "csv") {
+        exportToCSV(auth_salida, exportColumns, `autorizacion_salida_${dateTag}.csv`);
+        return;
+      }
+
+      if (format === "excel") {
+        exportToExcel(auth_salida, exportColumns, `autorizacion_salida_${dateTag}.xlsx`);
+        return;
+      }
+
+      exportToPDF(
+        auth_salida,
+        exportColumns,
+        `autorizacion_salida_${dateTag}.pdf`,
+        "Reporte de Autorización de Salida"
+      );
+    } catch (error) {
+      console.error("Error exportando autorización de salida:", error);
+      alerts.error("No se pudo generar el archivo de exportación");
+    }
+  };
+
+  const handleExportSelect = (event) => {
+    const format = event.target.value;
+    setExportFormat(format);
+    if (format) {
+      handleExport(format);
+      setExportFormat("");
+    }
+  };
+
   return (
     <MDBox>
       <DashboardNavbar />
@@ -260,6 +325,54 @@ function Auth_salida() {
               table={{ columns, rows }}
               canSearch
               onSearchChange={handleSearchAuthSalida}
+              searchActions={
+                <MDInput
+                  select
+                  value={exportFormat}
+                  onChange={handleExportSelect}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => (selected ? String(selected).toUpperCase() : "Exportar"),
+                    MenuProps: {
+                      PaperProps: {
+                        sx: {
+                          borderRadius: 2,
+                          mt: 1,
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    maxWidth: 220,
+                    "& .MuiInputBase-root": {
+                      height: 40,
+                      borderRadius: "10px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      backgroundColor: "#ffffff",
+                      color: "#002f87",
+                      "&:hover": {
+                        backgroundColor: "#00347b",
+                        "& .MuiSelect-select": {
+                          color: "#ffffff",
+                        },
+                      },
+                    },
+                    "& .MuiSelect-select": {
+                      color: "#071d89",
+                      pr: 4,
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ffffff",
+                    },
+                  }}
+                >
+                  <MenuItem value="csv">CSV</MenuItem>
+                  <MenuItem value="excel">Excel</MenuItem>
+                  <MenuItem value="pdf">PDF</MenuItem>
+                </MDInput>
+              }
               headerActions={
                 canInsert ? (
                   <MDButton variant="gradient" color="success" onClick={() => setOpenCreate(true)}>

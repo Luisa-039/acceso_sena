@@ -31,6 +31,7 @@ function Equips_sede() {
   const { permisos, isAdmin } = usePermissions(MODULOS.EQUIPOS_SEDE);
   const { effectiveSedeId } = useSede();
   const canInsert = isAdmin || permisos.insertar;
+  const canSelect = isAdmin || permisos.seleccionar;
   const canUpdate = isAdmin || permisos.actualizar;
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
@@ -75,7 +76,7 @@ function Equips_sede() {
 
   useEffect(() => {
     fetchEquips_sedes();
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, effectiveSedeId, canSelect]);
 
   const handleSearchEquipsSede = (value) => {
     setPage(0);

@@ -12,15 +12,20 @@ import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
 import EncuestaCreateModal from "@/components/encuestas/encuesta_create";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/exportUtils";
+import MDInput from "@/components/MDInput";
+import MenuItem from "@mui/material/MenuItem";
 import { alerts } from "@/hooks/alerts";
 import { useSede } from "@/context/sedeContext";
 
 function Encuestas() {
   const [encuestas, setEncuestas] = useState([]);
   const [openCreate, setOpenCreate] = useState(false);
+  const [exportFormat, setExportFormat] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.ENCUESTAS);
   const { effectiveSedeId } = useSede();
   const canInsert = isAdmin || permisos.insertar;
+  const canSelect = isAdmin || permisos.seleccionar;
   const canUpdate = isAdmin || permisos.actualizar;
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
@@ -39,7 +44,7 @@ function Encuestas() {
 
   useEffect(() => {
     fetchencuestas();
-  }, []);
+  }, [effectiveSedeId, canSelect]);
 
   //fución para cambiar el estado
   async function handleToggleEstado(encuesta) {
@@ -85,38 +90,6 @@ function Encuestas() {
       }
     }
   }
-
-  //Función para actualizar usuario
-  // async function handleUpdateCentro(data) {
-  //   if (!canUpdate) return;
-
-  //   try {
-  //     const response = await apiFetch(
-  //       `center/by-id/${selectedCentro.id_centro}`,
-  //       {
-  //         method: "PUT",
-  //         body: data,
-  //       }
-  //     );
-  //     setencuestas(centro =>
-  //       centro.map(c =>
-  //         c.id_centro === selectedCentro.id_centro
-  //           ? { ...c, ...data }
-  //           : c
-  //       )
-  //     );
-
-  //     if (response) {
-  //       fetchencuestas();
-  //       alerts.success("Centro actualizado con exito");
-  //       setSelectedCentro(null);
-  //     }
-
-  //   } catch (error) {
-  //     console.error(error);
-  //     alerts.error("Error al actualizar el centro");
-  //   }
-  // }
 
   const getEditButtonStyle = (activo) => ({
     color: activo ? "success.main" : "error.main",
@@ -187,6 +160,54 @@ function Encuestas() {
     encuesta
   }));
 
+  const exportColumns = [
+    { header: "Registro N.", key: "acceso_id" },
+    { header: "Nombre", key: "nombre_completo" },
+    { header: "Nombre sede", key: "nombre_sede" },
+    { header: "Lugar atendido", key: "nombre_area" },
+    { header: "Calificación", key: "calificacion" },
+    { header: "Sugerencias", key: "observacion" },
+    {
+      header: "Estado",
+      key: (row) => (row.estado_encuesta ? "Finalizada" : "Pendiente"),
+    },
+  ];
+
+  const handleExport = (format) => {
+    const dateTag = new Date().toISOString().slice(0, 10);
+
+    if (!encuestas.length) {
+      alerts.warning("No hay datos para exportar");
+      return;
+    }
+
+    try {
+      if (format === "csv") {
+        exportToCSV(encuestas, exportColumns, `encuestas_${dateTag}.csv`);
+        return;
+      }
+
+      if (format === "excel") {
+        exportToExcel(encuestas, exportColumns, `encuestas_${dateTag}.xlsx`);
+        return;
+      }
+
+      exportToPDF(encuestas, exportColumns, `encuestas_${dateTag}.pdf`, "Reporte de Encuestas");
+    } catch (error) {
+      console.error("Error exportando encuestas:", error);
+      alerts.error("No se pudo generar el archivo de exportación");
+    }
+  };
+
+  const handleExportSelect = (event) => {
+    const format = event.target.value;
+    setExportFormat(format);
+    if (format) {
+      handleExport(format);
+      setExportFormat("");
+    }
+  };
+
   return (
     <MDBox>
       <DashboardNavbar />
@@ -197,6 +218,54 @@ function Encuestas() {
             <DataTable
               table={{ columns, rows }}
               canSearch
+              searchActions={
+                <MDInput
+                  select
+                  value={exportFormat}
+                  onChange={handleExportSelect}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => (selected ? String(selected).toUpperCase() : "Exportar"),
+                    MenuProps: {
+                      PaperProps: {
+                        sx: {
+                          borderRadius: 2,
+                          mt: 1,
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    maxWidth: 220,
+                    "& .MuiInputBase-root": {
+                      height: 40,
+                      borderRadius: "10px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      backgroundColor: "#ffffff",
+                      color: "#002f87",
+                      "&:hover": {
+                        backgroundColor: "#00347b",
+                        "& .MuiSelect-select": {
+                          color: "#ffffff",
+                        },
+                      },
+                    },
+                    "& .MuiSelect-select": {
+                      color: "#071d89",
+                      pr: 4,
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ffffff",
+                    },
+                  }}
+                >
+                  <MenuItem value="csv">CSV</MenuItem>
+                  <MenuItem value="excel">Excel</MenuItem>
+                  <MenuItem value="pdf">PDF</MenuItem>
+                </MDInput>
+              }
 
               headerActions={
                 canInsert ? (

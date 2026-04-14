@@ -17,6 +17,7 @@ import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils
 import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
 import { alerts } from "@/hooks/alerts";
+import { useSede } from "@/context/sedeContext";
 
 function Inv_consumible() {
   const [Inv_consumible, setInv_consumible] = useState([]);
@@ -28,6 +29,7 @@ function Inv_consumible() {
   const [searchTerm, setSearchTerm] = useState("");
   const [exportFormat, setExportFormat] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.EQUIPOS_SEDE);
+  const { effectiveSedeId } = useSede();
   const canInsert = isAdmin || permisos.insertar;
   const canUpdate = isAdmin || permisos.actualizar;
   const canDelete = isAdmin || permisos.borrar;
@@ -43,6 +45,10 @@ function Inv_consumible() {
       params.append("search", searchTerm.trim());
     }
 
+    if (effectiveSedeId) {
+      params.append("sede_id", String(effectiveSedeId));
+    }
+
     const res = await apiFetch(`inv_consumibles/all_consumibles-pag?${params.toString()}`)
     setInv_consumible(res.consumibles || []);
     setTotal(res.total_consumibles || 0);
@@ -50,7 +56,11 @@ function Inv_consumible() {
 
   useEffect(() => {
     fetchInv_consumibles();
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, effectiveSedeId]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [effectiveSedeId]);
 
   const handleSearchConsumibles = (value) => {
     setPage(0);
@@ -218,6 +228,7 @@ function Inv_consumible() {
     consumibles
   }));
 
+  //Exportar 
   const exportColumns = [
     { header: "Sede", key: "nombre_sede" },
     { header: "Ubicación", key: "ubicacion" },

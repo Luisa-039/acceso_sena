@@ -7,6 +7,7 @@ import ListItemText from "@mui/material/ListItemText";
 
 // Material Dashboard 2 React components
 import MDBox from "@/components/MDBox";
+import Tooltip from "@/components/tooltips";
 
 // Custom styles for the SidenavCollapse
 import {
@@ -17,7 +18,14 @@ import {
 // Material Dashboard 2 React context
 import { useMaterialUIController } from "@/context";
 
-function SidenavCollapse({ name, active = false, activeColor = "success", activeBackground, ...rest }) {
+function SidenavCollapse({
+  name,
+  tooltipText,
+  active = false,
+  activeColor = "success",
+  activeBackground,
+  ...rest
+}) {
   const [controller] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
 
@@ -38,7 +46,11 @@ function SidenavCollapse({ name, active = false, activeColor = "success", active
         }
       >
         <ListItemText
-          primary={name}
+          primary={
+            <Tooltip text={tooltipText || (typeof name === "string" ? name : "Módulo")}>
+              <span>{name}</span>
+            </Tooltip>
+          }
           sx={(theme) =>
             collapseText(theme, {
               miniSidenav,
@@ -55,7 +67,8 @@ function SidenavCollapse({ name, active = false, activeColor = "success", active
 
 // Typechecking props for the SidenavCollapse
 SidenavCollapse.propTypes = {
-  name: PropTypes.string,
+  name: PropTypes.node,
+  tooltipText: PropTypes.string,
   active: PropTypes.bool,
   activeColor: PropTypes.string,
   activeBackground: PropTypes.string,

@@ -12,6 +12,7 @@ import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MODULOS } from "@/constants/modulos";
+import { exportToCSV, exportToExcel, exportToPDF, formatDateTime } from "@/utils/exportUtils";
 import { alerts } from "@/hooks/alerts";
 import { useSede } from "@/context/sedeContext";
 
@@ -24,9 +25,11 @@ function movements() {
   const [openCreate, setOpenCreate] = useState(false);
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportFormat, setExportFormat] = useState("");
   const { permisos, isAdmin } = usePermissions(MODULOS.MOVIMIENTO_EQUIPOS);
   const { effectiveSedeId } = useSede();
   const canUpdate = isAdmin || permisos.actualizar;
+  const canSelect = isAdmin || permisos.seleccionar;
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
 
@@ -64,7 +67,7 @@ function movements() {
 
   useEffect(() => {
     fetchMovements();
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, effectiveSedeId, canSelect]);
 
   const handleSearchMovements = (value) => {
     setPage(0);
@@ -200,17 +203,109 @@ function movements() {
     movements
   }));
 
+  const exportColumns = [
+    { header: "Autorización N.", key: "autorizacion_id" },
+    { header: "Tipo equipo", key: "nombre_categoria" },
+    { header: "N. serie", key: "serial_equipo" },
+    { header: "Movimiento", key: "nombre_tipo" },
+    { header: "Registrado por", key: "nombre_usuario" },
+    { header: "Fecha movimiento", key: "fecha_movimiento", format: formatDateTime },
+  ];
+
+  const handleExport = (format) => {
+    const dateTag = new Date().toISOString().slice(0, 10);
+
+    if (!movements.length) {
+      alerts.warning("No hay datos para exportar");
+      return;
+    }
+
+    try {
+      if (format === "csv") {
+        exportToCSV(movements, exportColumns, `movimientos_${dateTag}.csv`);
+        return;
+      }
+
+      if (format === "excel") {
+        exportToExcel(movements, exportColumns, `movimientos_${dateTag}.xlsx`);
+        return;
+      }
+
+      exportToPDF(movements, exportColumns, `movimientos_${dateTag}.pdf`, "Reporte de Movimientos");
+    } catch (error) {
+      console.error("Error exportando movimientos:", error);
+      alerts.error("No se pudo generar el archivo de exportación");
+    }
+  };
+
+  const handleExportSelect = (event) => {
+    const format = event.target.value;
+    setExportFormat(format);
+    if (format) {
+      handleExport(format);
+      setExportFormat("");
+    }
+  };
+
   return (
     <MDBox>
       <DashboardNavbar />
       <MDBox pt={6} pb={3}>
         <Card>
           <MDBox p={3}>
-            <MDTypography variant="h3">Movimientos</MDTypography>
+            <MDTypography variant="h3">Historial de equipos</MDTypography>
             <DataTable
               table={{ columns, rows }}
               canSearch
               onSearchChange={handleSearchMovements}
+              searchActions={
+                <MDInput
+                  select
+                  value={exportFormat}
+                  onChange={handleExportSelect}
+                  SelectProps={{
+                    displayEmpty: true,
+                    renderValue: (selected) => (selected ? String(selected).toUpperCase() : "Exportar"),
+                    MenuProps: {
+                      PaperProps: {
+                        sx: {
+                          borderRadius: 2,
+                          mt: 1,
+                        },
+                      },
+                    },
+                  }}
+                  sx={{
+                    minWidth: 160,
+                    maxWidth: 220,
+                    "& .MuiInputBase-root": {
+                      height: 40,
+                      borderRadius: "10px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      backgroundColor: "#ffffff",
+                      color: "#002f87",
+                      "&:hover": {
+                        backgroundColor: "#00347b",
+                        "& .MuiSelect-select": {
+                          color: "#ffffff",
+                        },
+                      },
+                    },
+                    "& .MuiSelect-select": {
+                      color: "#071d89",
+                      pr: 4,
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ffffff",
+                    },
+                  }}
+                >
+                  <MenuItem value="csv">CSV</MenuItem>
+                  <MenuItem value="excel">Excel</MenuItem>
+                  <MenuItem value="pdf">PDF</MenuItem>
+                </MDInput>
+              }
               pagination={{
                 manual: true,
                 page, pageSize,

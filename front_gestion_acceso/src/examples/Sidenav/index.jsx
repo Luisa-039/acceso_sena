@@ -21,6 +21,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 // Material Dashboard 2 React components
 import MDBox from "@/components/MDBox";
 import MDTypography from "@/components/MDTypography";
+import Tooltip from "@/components/tooltips";
 
 // Material Dashboard 2 React example components
 import SidenavCollapse from "@/examples/Sidenav/SidenavCollapse";
@@ -60,6 +61,7 @@ function SidenavItem({ route, textColor }) {
       >
         <SidenavCollapse
           name={route.name}
+          tooltipText={route.tooltipDescription}
           icon={route.icon}
           active={false}
           activeColor={route.activeColor}
@@ -72,6 +74,7 @@ function SidenavItem({ route, textColor }) {
         {({ isActive }) => (
           <SidenavCollapse
             name={route.name}
+            tooltipText={route.tooltipDescription}
             icon={route.icon}
             active={isActive}
             activeColor={route.activeColor}
@@ -137,7 +140,9 @@ function SidenavItem({ route, textColor }) {
             color="inherit"
             sx={{ fontSize: "12px", lineHeight: 1.2 }}
           >
-            {route.name}
+            <Tooltip text={route.tooltipDescription || route.name}>
+              <span>{route.name}</span>
+            </Tooltip>
           </MDTypography>
         </AccordionSummary>
         <AccordionDetails sx={{ pt: 0, pb: 0, pl: 2, bgcolor: "#074c78", fontSize: "10px" }}>

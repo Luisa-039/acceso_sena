@@ -19,7 +19,7 @@ import { MODULOS } from "@/constants/modulos";
 import Categorias from "@/pages/categorias";
 import Areas from "@/pages/areas";
 import Encuestas from "./pages/encuestas";
-import Consumibles from "@/pages/inv_conumibles";
+import Consumibles from "@/pages/inv_consumibles";
 import Access_register from "@/pages/access";
 import AccordionPage from "@/pages/accordionPage";
 
@@ -54,6 +54,7 @@ const routes = [
   {
     type: "collapse",
     name: "Dashboard",
+    tooltipDescription: "Visualiza indicadores, reportes y resumen general del sistema.",
     key: "dashboard",
     route: "/dashboard",
     idModulo: MODULOS.VER_DASHBOARD,
@@ -62,12 +63,14 @@ const routes = [
   {
     type: "accordion",
     name: "Gestión de accesos",
+    tooltipDescription: "Administra ingresos de personas, equipos y encuestas de atención.",
     key: "accesos-menu",
     icon: "group",
     collapse: [
       {
         type: "collapse",
         name: "Registro de accesos",
+        tooltipDescription: "Consulta y registra entradas y salidas de personas en sede.",
         key: "access_register_group",
         route: "registro-access",
         idModulo: MODULOS.REGISTROS_ACCESO,
@@ -76,6 +79,7 @@ const routes = [
       {
         type: "collapse",
         name: "Personas",
+        tooltipDescription: "Gestiona datos de las personas que ingresan al centro.",
         key: "persons_group",
         route: "persons",
         idModulo: MODULOS.PERSONAS,
@@ -84,6 +88,7 @@ const routes = [
       {
         type: "collapse",
         name: "Equipos",
+        tooltipDescription: "Registra y consulta equipos externos asociados a visitantes.",
         key: "equipement_group",
         route: "equipement",
         idModulo: MODULOS.EQUIPOS_EXTERNOS,
@@ -92,6 +97,7 @@ const routes = [
       {
         type: "collapse",
         name: "Encuestas",
+        tooltipDescription: "Revisa calificaciones y observaciones del servicio prestado.",
         key: "encuestas_group",
         route: "encuestas",
         idModulo: MODULOS.ENCUESTAS,
@@ -102,12 +108,14 @@ const routes = [
   {
     type: "accordion",
     name: "Gestión de usuarios",
+    tooltipDescription: "Configura usuarios, roles, permisos y estructura de módulos.",
     key: "usuarios-menu",
     icon: "group",
     collapse: [
       {
         type: "collapse",
         name: "Usuarios",
+        tooltipDescription: "Crea, edita y administra cuentas de acceso al sistema.",
         key: "users_group",
         route: "users",
         idModulo: MODULOS.USUARIOS,
@@ -116,6 +124,7 @@ const routes = [
       {
         type: "collapse",
         name: "Roles",
+        tooltipDescription: "Define perfiles de rol para controlar la visibilidad y acciones.",
         key: "roles_group",
         route: "roles",
         idModulo: MODULOS.ROLES,
@@ -124,6 +133,7 @@ const routes = [
       {
         type: "collapse",
         name: "Módulos",
+        tooltipDescription: "Administra el catálogo de módulos habilitados en la plataforma.",
         key: "modulos_group",
         route: "modulos",
         idModulo: MODULOS.MODULOS,
@@ -132,6 +142,7 @@ const routes = [
       {
         type: "collapse",
         name: "Permisos",
+        tooltipDescription: "Asigna permisos por rol para crear, ver, editar o eliminar.",
         key: "permisos_group",
         route: "permisos",
         idModulo: MODULOS.PERMISOS,
@@ -142,12 +153,14 @@ const routes = [
   {
     type: "accordion",
     name: "Gestión de categorías",
+    tooltipDescription: "Organiza categorías y tipos usados en registros y movimientos.",
     key: "categorias-menu",
     icon: "group",
     collapse: [
       {
         type: "collapse",
         name: "Categorías",
+        tooltipDescription: "Mantiene categorías de equipos y consumibles del sistema.",
         key: "categorias_group",
         route: "categorias",
         idModulo: MODULOS.CATEGORIAS,
@@ -156,6 +169,7 @@ const routes = [
       {
         type: "collapse",
         name: "Tipos de movimientos",
+        tooltipDescription: "Define tipos de movimiento para trazabilidad de equipos.",
         key: "tipos-movimientos_group",
         route: "tipos-movimientos",
         idModulo: MODULOS.TIPO_MOVIMIENTOS,
@@ -166,11 +180,13 @@ const routes = [
   {
     type: "accordion",
     name: "Gestión de sede",
+    tooltipDescription: "Administra procesos operativos y control de inventario por sede.",
     key: "accordion-menu",
     collapse: [
       {
         type: "collapse",
         name: "Autorizaciones salidas",
+        tooltipDescription: "Gestiona autorizaciones para salida de equipos de la sede.",
         key: "auth_salida_group",
         route: "auth_salida",
         idModulo: MODULOS.AUTORIZACION_SALIDA,
@@ -179,6 +195,7 @@ const routes = [
       {
         type: "collapse",
         name: "Equipos sede",
+        tooltipDescription: "Consulta equipos asignados y ubicados dentro de la sede.",
         key: "equipement_sede_group",
         route: "equipement_sede",
         idModulo: MODULOS.EQUIPOS_SEDE,
@@ -187,6 +204,7 @@ const routes = [
       {
         type: "collapse",
         name: "Historial de equipos",
+        tooltipDescription: "Visualiza el historial completo de movimientos de equipos.",
         key: "movements_group",
         route: "movements",
         idModulo: MODULOS.MOVIMIENTO_EQUIPOS,
@@ -195,6 +213,7 @@ const routes = [
       {
         type: "collapse",
         name: "Inventario consumibles",
+        tooltipDescription: "Controla stock, estado y trazabilidad de consumibles.",
         key: "consumibles",
         route: "consumibles",
         idModulo: MODULOS.INVENTARIO_CONSUMIBLES,
@@ -205,12 +224,14 @@ const routes = [
   {
     type: "accordion",
     name: "Gestión operativa",
+    tooltipDescription: "Administra estructura territorial y organizacional del sistema.",
     key: "centros-menu",
     icon: "group",
     collapse: [
       {
         type: "collapse",
         name: "Áreas",
+        tooltipDescription: "Crea y organiza las áreas donde se atiende a usuarios.",
         key: "areas_group",
         route: "areas",
         idModulo: MODULOS.AREAS,
@@ -219,6 +240,7 @@ const routes = [
       {
         type: "collapse",
         name: "Centros",
+        tooltipDescription: "Gestiona centros de formación disponibles en la plataforma.",
         key: "centros",
         route: "centros",
         idModulo: MODULOS.CENTROS,
@@ -227,6 +249,7 @@ const routes = [
       {
         type: "collapse",
         name: "Ciudades",
+        tooltipDescription: "Administra ciudades relacionadas con centros y sedes.",
         key: "ciudades_group",
         route: "ciudades",
         idModulo: MODULOS.CIUDADES,
@@ -235,6 +258,7 @@ const routes = [
       {
         type: "collapse",
         name: "Departamentos",
+        tooltipDescription: "Configura departamentos para la ubicación geográfica.",
         key: "departamentos_group",
         route: "departamentos",
         idModulo: MODULOS.DEPARTAMENTOS,
@@ -243,6 +267,7 @@ const routes = [
       {
         type: "collapse",
         name: "Sedes",
+        tooltipDescription: "Gestiona sedes disponibles y su información operativa.",
         key: "sedes",
         route: "sedes",
         idModulo: MODULOS.SEDES,
