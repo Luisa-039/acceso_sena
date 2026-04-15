@@ -7,13 +7,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
+# Función para normalizar texto (ej. nombres de tipos de movimiento) para comparaciones consistentes
 def _normalize_text(value: str | None) -> str:
     if not value:
         return ""
     return value.strip().lower().replace("_", " ")
 
-
+# Función para construir la cláusula FROM común en consultas de movimientos recientes
 def _latest_movements_from_clause() -> str:
     return """
         FROM movimientos_equipos_sede m
@@ -146,6 +146,7 @@ def update_movement_by_id(
     fecha_movimiento: datetime | None = None,
 ) -> bool:
     try:
+        # 1. Obtener movimiento actual
         current_query = text("""
             SELECT m.id_movimiento_sede, m.equipo_id, tm.nombre_tipo, m.usuario_registra
             FROM movimientos_equipos_sede m
@@ -160,22 +161,26 @@ def update_movement_by_id(
         if not current_movement:
             return False
 
+        # 2. Regla de negocio: no modificar si ya está dado de baja
         if _normalize_text(current_movement.get("nombre_tipo")) == "dado de baja":
             raise ValueError("movement_locked")
 
+        # 3. Validar tipo nuevo
         type_query = text("""
             SELECT nombre_tipo
             FROM tipo_movimientos
             WHERE id_tipo = :tipo_id
         """)
         target_type = db.execute(type_query, {"tipo_id": tipo_id}).mappings().first()
+
         if not target_type:
             return False
 
-# Si el movimiento actual no es "Dado de baja" pero el nuevo tipo sí lo es, se debe actualizar el estado del equipo.
-
+        # 4. Preparar datos
         movement_user = usuario_registra or current_movement["usuario_registra"]
         movement_time = fecha_movimiento or datetime.now(timezone.utc)
+
+        # 5. INSERT (historial SIEMPRE)
         insert_query = text("""
             INSERT INTO movimientos_equipos_sede (
                 equipo_id, autorizacion_id, usuario_registra, fecha_movimiento, tipo_id
@@ -184,84 +189,38 @@ def update_movement_by_id(
             FROM movimientos_equipos_sede
             WHERE id_movimiento_sede = :id_movimiento_sede
         """)
-        try:
-            result = db.execute(insert_query, {
-                "tipo_id": tipo_id,
-                "id_movimiento_sede": id_movimiento,
-                "usuario_registra": movement_user,
-                "fecha_movimiento": movement_time,
-            })
-            # Confirmar primero el cambio de estado en movimientos.
-            db.commit()
-        except IntegrityError as insert_error:
-            db.rollback()
-            logger.warning(
-                "No se pudo crear histórico para movimiento %s (posible restricción única). "
-                "Se actualiza la fila actual. Error: %s",
-                id_movimiento,
-                insert_error,
-            )
-            update_current_query = text("""
-                UPDATE movimientos_equipos_sede
-                SET tipo_id = :tipo_id,
-                    usuario_registra = :usuario_registra,
-                    fecha_movimiento = :fecha_movimiento
-                WHERE id_movimiento_sede = :id_movimiento_sede
-            """)
-            result = db.execute(update_current_query, {
-                "tipo_id": tipo_id,
-                "usuario_registra": movement_user,
-                "fecha_movimiento": movement_time,
-                "id_movimiento_sede": id_movimiento,
-            })
-            db.commit()
 
+        result = db.execute(insert_query, {
+            "tipo_id": tipo_id,
+            "id_movimiento_sede": id_movimiento,
+            "usuario_registra": movement_user,
+            "fecha_movimiento": movement_time,
+        })
+
+        db.commit()
+
+        # 6. Si el nuevo estado es "dado de baja", actualizar equipo
         if _normalize_text(target_type.get("nombre_tipo")) == "dado de baja":
-            try:
-                update_equipment_status = text("""
-                    UPDATE equipos_sede_inv
-                    SET estado = :estado
-                    WHERE id_equipo_sede = :equipo_id
-                """)
-                db.execute(update_equipment_status, {
-                    "estado": "Dado_de_baja",
-                    "equipo_id": current_movement["equipo_id"],
-                })
-                db.commit()
-            except SQLAlchemyError as state_error:
-                db.rollback()
-                logger.warning(
-                    "No se pudo actualizar estado a 'Dado_de_baja' para equipo %s. "
-                    "Se usa fallback a 'Inactivo'. Error: %s",
-                    current_movement["equipo_id"],
-                    state_error,
-                )
-                try:
-                    fallback_status = text("""
-                        UPDATE equipos_sede_inv
-                        SET estado = :estado
-                        WHERE id_equipo_sede = :equipo_id
-                    """)
-                    db.execute(fallback_status, {
-                        "estado": "Inactivo",
-                        "equipo_id": current_movement["equipo_id"],
-                    })
-                    db.commit()
-                except SQLAlchemyError as fallback_error:
-                    db.rollback()
-                    logger.error(
-                        "No se pudo aplicar fallback de estado para equipo %s: %s",
-                        current_movement["equipo_id"],
-                        fallback_error,
-                    )
+            update_equipment_status = text("""
+                UPDATE equipos_sede_inv
+                SET estado = :estado
+                WHERE id_equipo_sede = :equipo_id
+            """)
+
+            db.execute(update_equipment_status, {
+                "estado": "Dado_de_baja",
+                "equipo_id": current_movement["equipo_id"],
+            })
+
+            db.commit()
 
         return result.rowcount > 0
 
     except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"Error al actualizar los movimientos: {e}", exc_info=True)
-        raise Exception(f"Error de base de datos al actualizar los movimientos: {e}")
-
+        raise Exception("Error de base de datos al actualizar los movimientos")
+    
 def get_all_movements_pag(
     db: Session,
     skip: int = 0,
