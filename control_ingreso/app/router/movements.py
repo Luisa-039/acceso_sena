@@ -113,12 +113,38 @@ def update_movement_by_id(
         if not verify_permissions(db, id_rol, modulo, 'actualizar'):
             raise HTTPException(status_code=401, detail="Usuario no autorizado")
         
-        success = crud_movement.update_movement_by_id(db, id_movimiento, movement.tipo_id)
+        success = crud_movement.update_movement_by_id(
+            db,
+            id_movimiento,
+            movement.tipo_id,
+            usuario_registra=user_token.id_usuario,
+        )
         if not success:
             raise HTTPException(status_code=400, detail="No se pudo actualizar el movimiento")
         return {"message": "Movimiento actualizado correctamente"}
+    except ValueError as e:
+        if str(e) == "movement_locked":
+            raise HTTPException(status_code=409, detail="El movimiento está en 'Dado de baja' y no admite cambios")
+        raise HTTPException(status_code=400, detail="Solicitud inválida")
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/historial/{autorizacion_id}", response_model=List[MovementOut])
+def get_movements_history_by_autorizacion(
+    autorizacion_id: int,
+    db: Session = Depends(get_db),
+    user_token: UserOut = Depends(get_current_user)
+):
+    id_rol = user_token.rol_id
+    if not verify_permissions(db, id_rol, modulo, "seleccionar"):
+        raise HTTPException(status_code=401, detail="Usuario no autorizado")
+
+    historial = crud_movement.get_movements_by_autorizacion(db, autorizacion_id)
+    if not historial:
+        raise HTTPException(status_code=404, detail="Historial no encontrado")
+
+    return historial
 
 @router.get("/paginated", response_model=PaginatedMovements)
 def get_movements_pag(

@@ -2,9 +2,15 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "../services/api";
 import Card from "@mui/material/Card";
 import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
 
 import MDBox from "@/components/MDBox";
 import MDTypography from "@/components/MDTypography";
+import MDButton from "@/components/MDButton";
 
 import DataTable from "@/examples/Tables/DataTable";
 import DashboardNavbar from "@/examples/Navbars/DashboardNavbar";
@@ -19,10 +25,13 @@ import { useSede } from "@/context/sedeContext";
 
 function movements() {
   const [movements, setMovements] = useState([]);
+  const [movementHistory, setMovementHistory] = useState([]);
+  const [selectedHistoryMovement, setSelectedHistoryMovement] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [openCreate, setOpenCreate] = useState(false);
+  const [openHistory, setOpenHistory] = useState(false);
   const [tiposMovimiento, setTiposMovimiento] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [exportFormat, setExportFormat] = useState("");
@@ -32,6 +41,9 @@ function movements() {
   const canSelect = isAdmin || permisos.seleccionar;
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
+
+  const isDadoDeBaja = (estado = "") =>
+    String(estado).trim().toLowerCase().replaceAll("_", " ") === "dado de baja";
 
   const fetchMovementTypes = async () => {
     try {
@@ -60,6 +72,13 @@ function movements() {
     setMovements(res.movements || []);
     setTotal(res.total_movements || 0);
   }
+
+  const fetchMovementHistory = async (autorizacionId) => {
+    if (!autorizacionId) return;
+
+    const res = await apiFetch(`movements/historial/${autorizacionId}`);
+    setMovementHistory(Array.isArray(res) ? res : []);
+  };
 
   useEffect(() => {
     fetchMovementTypes();
@@ -92,18 +111,40 @@ function movements() {
         body: { tipo_id: idTipo },
       });
 
-      setMovements(prev =>
-        prev.map(m =>
-          m.id_movimiento_sede === movement.id_movimiento_sede
-            ? { ...m, nombre_tipo: nombreMovimiento }
-            : m
-        )
-      );
-      //fetchMovements();
+      await fetchMovements();
+      if (openHistory && selectedHistoryMovement?.autorizacion_id === movement.autorizacion_id) {
+        await fetchMovementHistory(movement.autorizacion_id);
+      }
     } catch (error) {
+      const detail = String(error?.detail || "");
+      if (detail) {
+        alerts.warning(detail);
+        return;
+      }
       alerts.error("No se pudo actualizar el estado");
     }
   }
+
+  const handleOpenHistory = async (movement) => {
+    if (!movement?.autorizacion_id) {
+      alerts.warning("Este movimiento no tiene autorización asociada");
+      return;
+    }
+
+    setSelectedHistoryMovement(movement);
+    setOpenHistory(true);
+    try {
+      await fetchMovementHistory(movement.autorizacion_id);
+    } catch (error) {
+      alerts.error("No se pudo cargar el historial");
+    }
+  };
+
+  const handleCloseHistory = () => {
+    setOpenHistory(false);
+    setSelectedHistoryMovement(null);
+    setMovementHistory([]);
+  };
 
   const estadoStyles = {
     Entrada: "success.main",
@@ -164,6 +205,7 @@ function movements() {
             select
             value={value || ""}
             size="small"
+            disabled={isDadoDeBaja(value)}
             onChange={(e) => handleToggleEstado(movement, e.target.value)}
             sx={getEstadoStyle(value)}
           >
@@ -178,6 +220,20 @@ function movements() {
     },
     { header: "Registrado por", accessorKey: "user_registra" },
     { header: "Fecha movimiento", accessorKey: "fecha_movimiento" },
+    {
+      id: "historial",
+      header: "Historial",
+      cell: ({ row }) => (
+        <MDButton
+          variant="text"
+          size="small"
+          color="info"
+          onClick={() => handleOpenHistory(row.original.movements)}
+        >
+          Ver historial
+        </MDButton>
+      ),
+    },
   ];
 
   const formatearFecha = (fechaString) => {
@@ -316,6 +372,39 @@ function movements() {
           </MDBox>
         </Card>
         <Dialog open={openCreate} onClose={() => setOpenCreate(false)}>
+        </Dialog>
+        <Dialog open={openHistory} onClose={handleCloseHistory} fullWidth maxWidth="md">
+          <DialogTitle>
+            Historial de movimiento
+            <MDTypography variant="body2" color="text.secondary">
+              {selectedHistoryMovement ? `Autorización #${selectedHistoryMovement.autorizacion_id} | Equipo ${selectedHistoryMovement.serial_equipo}` : ""}
+            </MDTypography>
+          </DialogTitle>
+          <DialogContent dividers>
+            {movementHistory.length ? (
+              movementHistory.map((item, index) => (
+                <MDBox key={item.id_movimiento_sede} mb={index === movementHistory.length - 1 ? 0 : 2}>
+                  <MDBox display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                    <MDTypography variant="subtitle2">{item.nombre_tipo}</MDTypography>
+                    <MDTypography variant="caption" color="text.secondary">
+                      {formatearFecha(item.fecha_movimiento)}
+                    </MDTypography>
+                  </MDBox>
+                  <MDTypography variant="body2" color="text.secondary">
+                    Registrado por: {item.nombre_usuario}
+                  </MDTypography>
+                  <Divider sx={{ mt: 1.5 }} />
+                </MDBox>
+              ))
+            ) : (
+              <MDTypography variant="body2" color="text.secondary">
+                No hay movimientos registrados para esta autorización.
+              </MDTypography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseHistory}>Cerrar</Button>
+          </DialogActions>
         </Dialog>
       </MDBox>
     </MDBox>

@@ -71,7 +71,8 @@ function Equips_sede() {
     { value: "Disponible", label: "DISPONIBLE" },
     { value: "Mantenimiento", label: "MANTENIMIENTO" },
     { value: "Fuera_de_sede", label: "FUERA DE SEDE" },
-    { value: "Inactivo", label: "INACTIVO" }
+    { value: "Inactivo", label: "INACTIVO" },
+    { value: "Dado_de_baja", label: "DADO DE BAJA" }
   ];
 
   useEffect(() => {
@@ -109,7 +110,8 @@ function Equips_sede() {
     Disponible: "success.main",
     Mantenimiento: "warning.main",
     Fuera_de_sede: "info.main",
-    Inactivo: "error.main"
+    Inactivo: "error.main",
+    Dado_de_baja: "error.dark"
   };
 
   const getEstadoStyle = (estado) => ({

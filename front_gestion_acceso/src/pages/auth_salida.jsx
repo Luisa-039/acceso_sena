@@ -18,9 +18,6 @@ import MDInput from "@/components/MDInput";
 import MenuItem from "@mui/material/MenuItem";
 import { alerts } from "@/hooks/alerts";
 import { useSede } from "@/context/sedeContext";
-
-
-
 function Auth_salida() {
   const [auth_salida, setAuth_salida] = useState([]);
   const [selectedAuth_salida, setSelectedAuth_salida] = useState(null);
@@ -33,8 +30,8 @@ function Auth_salida() {
   const { permisos, isAdmin } = usePermissions(MODULOS.AUTORIZACION_SALIDA);
   const { effectiveSedeId } = useSede();
   const canInsert = isAdmin || permisos.insertar;
-  const canSelect = isAdmin || permisos.seleccionar
   const canUpdate = isAdmin || permisos.actualizar;
+  const canSelect = isAdmin || permisos.seleccionar;
   const canDelete = isAdmin || permisos.borrar;
   const canChangeState = canUpdate || canDelete;
 

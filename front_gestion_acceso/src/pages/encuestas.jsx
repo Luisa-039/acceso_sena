@@ -19,6 +19,7 @@ import { alerts } from "@/hooks/alerts";
 import { useSede } from "@/context/sedeContext";
 
 function Encuestas() {
+
   const [encuestas, setEncuestas] = useState([]);
   const [openCreate, setOpenCreate] = useState(false);
   const [exportFormat, setExportFormat] = useState("");

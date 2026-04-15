@@ -9,6 +9,7 @@ class Estado_equip_sede(str, Enum):
     mantenimiento = "Mantenimiento"
     fuera_de_sede = "Fuera_de_sede"
     inactivo = "Inactivo"
+    dado_de_baja = "Dado_de_baja"
 
 #Este es para crear el modelo base 
 class Equipo_sedeBase(BaseModel):

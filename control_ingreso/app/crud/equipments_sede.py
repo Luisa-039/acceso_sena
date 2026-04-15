@@ -8,6 +8,25 @@ from app.schemas.equipments_sede import Equipo_sedeCreate, Equipo_sedeUpdate, Es
 
 logger = logging.getLogger(__name__)
 
+
+def _active_equipment_filters() -> list[str]:
+    return [
+        "LOWER(COALESCE(eq.estado, '')) <> 'dado_de_baja'",
+        "(tm_mov.nombre_tipo IS NULL OR LOWER(REPLACE(tm_mov.nombre_tipo, '_', ' ')) <> 'dado de baja')",
+    ]
+
+
+def _current_equipment_clause() -> str:
+    return """
+        LEFT JOIN (
+            SELECT equipo_id, MAX(id_movimiento_sede) AS id_movimiento_sede
+            FROM movimientos_equipos_sede
+            GROUP BY equipo_id
+        ) latest_mov ON latest_mov.equipo_id = eq.id_equipo_sede
+        LEFT JOIN movimientos_equipos_sede mov ON mov.id_movimiento_sede = latest_mov.id_movimiento_sede
+        LEFT JOIN tipo_movimientos tm_mov ON tm_mov.id_tipo = mov.tipo_id
+    """
+
 def create_equipment_sede(db: Session, 
                      equipo_sede: Equipo_sedeCreate,
                      ) -> Optional[bool]:
@@ -46,7 +65,11 @@ def get_equipment_sede_by_cod_barras(
                           INNER JOIN sedes as s ON eq.sede_id = s.id_sede
                           INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
                           INNER JOIN areas as a ON eq.area_id = a.id_area
-                          WHERE codigo_barras_equipo = :codigo_barras {sede_filter} {centro_filter}""")
+                                                    {_current_equipment_clause()}
+                                                    WHERE codigo_barras_equipo = :codigo_barras
+                                                        AND LOWER(COALESCE(eq.estado, '')) <> 'dado_de_baja'
+                                                        AND (tm_mov.nombre_tipo IS NULL OR LOWER(REPLACE(tm_mov.nombre_tipo, '_', ' ')) <> 'dado de baja')
+                                                        {sede_filter} {centro_filter}""")
         params = {"codigo_barras": codigo_barras}
         if sede_id is not None:
             params["sede_id"] = sede_id
@@ -74,7 +97,11 @@ def get_equipment_sede_by_serial(
                           INNER JOIN sedes as s ON eq.sede_id = s.id_sede
                           INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
                           INNER JOIN areas as a ON eq.area_id = a.id_area
-                     WHERE serial = :equipo_serial {sede_filter} {centro_filter}""")
+                         {_current_equipment_clause()}
+                     WHERE serial = :equipo_serial
+                       AND LOWER(COALESCE(eq.estado, '')) <> 'dado_de_baja'
+                       AND (tm_mov.nombre_tipo IS NULL OR LOWER(REPLACE(tm_mov.nombre_tipo, '_', ' ')) <> 'dado de baja')
+                       {sede_filter} {centro_filter}""")
         params = {"equipo_serial": serial_eq}
         if sede_id is not None:
             params["sede_id"] = sede_id
@@ -88,7 +115,7 @@ def get_equipment_sede_by_serial(
 
 def get_all_equipments_sede(db: Session, sede_id: int | None = None, centro_id: int | None = None):
     try:
-        filters = []
+        filters = _active_equipment_filters()
         if sede_id is not None:
             filters.append("eq.sede_id = :sede_id")
         if centro_id is not None:
@@ -101,6 +128,7 @@ def get_all_equipments_sede(db: Session, sede_id: int | None = None, centro_id: 
                           INNER JOIN sedes as s ON eq.sede_id = s.id_sede
                           INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
                           INNER JOIN areas as a ON eq.area_id = a.id_area
+                          {_current_equipment_clause()}
                           {where_clause}
                      """)
         params = {}
@@ -195,29 +223,33 @@ def get_all_equipements_sede_pag(
         search = search.strip()
         query_params = {"skip": skip, "limit": limit}
 
-        where_clause = ""
+        where_conditions = _active_equipment_filters()
         if search:
-            where_clause = """
-                WHERE eq.serial LIKE :search
-                   OR eq.codigo_barras_equipo LIKE :search
-                   OR eq.descripcion LIKE :search
-                   OR eq.marca LIKE :search
-                   OR eq.modelo LIKE :search
-                   OR s.nombre LIKE :search
-                   OR c.nombre_categoria LIKE :search
-                   OR a.nombre_area LIKE :search
-                   OR CAST(eq.id_equipo_sede AS CHAR) LIKE :search
-                   OR eq.estado LIKE :search
-            """
+            where_conditions.insert(0, """
+                (
+                    eq.serial LIKE :search
+                    OR eq.codigo_barras_equipo LIKE :search
+                    OR eq.descripcion LIKE :search
+                    OR eq.marca LIKE :search
+                    OR eq.modelo LIKE :search
+                    OR s.nombre LIKE :search
+                    OR c.nombre_categoria LIKE :search
+                    OR a.nombre_area LIKE :search
+                    OR CAST(eq.id_equipo_sede AS CHAR) LIKE :search
+                    OR eq.estado LIKE :search
+                )
+            """)
             query_params["search"] = f"%{search}%"
 
         if sede_id is not None:
-            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} eq.sede_id = :sede_id"
+            where_conditions.append("eq.sede_id = :sede_id")
             query_params["sede_id"] = sede_id
 
         if centro_id is not None:
-            where_clause = f"{where_clause} {'AND' if where_clause else 'WHERE'} s.centro_id = :centro_id"
+            where_conditions.append("s.centro_id = :centro_id")
             query_params["centro_id"] = centro_id
+
+        where_clause = f"WHERE {' AND '.join(where_conditions)}" if where_conditions else ""
 
         count_query = text(f"""
             SELECT COUNT(eq.id_equipo_sede) AS total
@@ -225,6 +257,7 @@ def get_all_equipements_sede_pag(
             INNER JOIN sedes as s ON eq.sede_id = s.id_sede
             INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
             INNER JOIN areas as a ON eq.area_id = a.id_area
+            {_current_equipment_clause()}
             {where_clause}
         """)
         total_result = db.execute(count_query, query_params).scalar()
@@ -237,6 +270,7 @@ def get_all_equipements_sede_pag(
                             INNER JOIN sedes as s ON eq.sede_id = s.id_sede
                             INNER JOIN categorias as c ON eq.categoria_id = c.id_categoria
                             INNER JOIN areas as a ON eq.area_id = a.id_area
+                            {_current_equipment_clause()}
                             {where_clause}
                             LIMIT :limit OFFSET :skip
                             """)
