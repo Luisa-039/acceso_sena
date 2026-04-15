@@ -115,7 +115,58 @@ def get_all_movements(db: Session, sede_id: int | None = None, centro_id: int | 
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener el listado de movimientos: {e}")
         raise Exception("Error de base de datos al obtener el listado de movimientos")
-    
+
+def get_all_movements_history(db: Session, sede_id: int | None = None, centro_id: int | None = None, search: str | None = None):
+    try:
+        filters = []
+        params = {}
+        search = search or ""
+
+        if search.strip():
+            filters.append("""
+                (CAST(m.id_movimiento_sede AS CHAR) LIKE :search
+                OR CAST(m.autorizacion_id AS CHAR) LIKE :search
+                OR e.serial LIKE :search
+                OR u.nombre_usuario LIKE :search
+                OR c.nombre_categoria LIKE :search
+                OR tm.nombre_tipo LIKE :search)
+            """)
+            params["search"] = f"%{search.strip()}%"
+
+        if sede_id is not None:
+            filters.append("e.sede_id = :sede_id")
+            params["sede_id"] = sede_id
+
+        if centro_id is not None:
+            filters.append("s.centro_id = :centro_id")
+            params["centro_id"] = centro_id
+
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+
+        query = text(f"""SELECT m.id_movimiento_sede, m.equipo_id, m.autorizacion_id,
+                        m.usuario_registra, m.tipo_id, m.fecha_movimiento, e.serial AS serial_equipo, 
+                        e.categoria_id, u.nombre_usuario, c.nombre_categoria, tm.nombre_tipo
+                        FROM movimientos_equipos_sede m
+                        INNER JOIN equipos_sede_inv e ON m.equipo_id = e.id_equipo_sede
+                        INNER JOIN sedes s ON e.sede_id = s.id_sede
+                        INNER JOIN categorias c ON c.id_categoria = e.categoria_id
+                        INNER JOIN usuarios as u ON u.id_usuario = m.usuario_registra
+                        INNER JOIN tipo_movimientos tm ON tm.id_tipo = m.tipo_id
+                        {where_clause}
+                        ORDER BY m.fecha_movimiento DESC, m.id_movimiento_sede DESC
+                    """)
+        if sede_id is not None:
+            params["sede_id"] = sede_id
+        if centro_id is not None:
+            params["centro_id"] = centro_id
+        result = db.execute(query, params).mappings().all()
+        return result
+    except SQLAlchemyError as e:
+        logger.error(f"Error al obtener el listado de movimientos: {e}")
+        raise Exception("Error de base de datos al obtener el listado de movimientos")
+
+
+
 def get_movements_by_autorizacion(db: Session, autorizacion_id: int):
     try:
         query = text("""

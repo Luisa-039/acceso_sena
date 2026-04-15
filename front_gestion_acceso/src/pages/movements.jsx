@@ -280,31 +280,48 @@ function movements() {
     { header: "Fecha movimiento", key: "fecha_movimiento", format: formatDateTime },
   ];
 
-  const handleExport = (format) => {
-    const dateTag = new Date().toISOString().slice(0, 10);
+const handleExport = async (format) => {
+  try {
+    const params = new URLSearchParams();
 
-    if (!movements.length) {
+    // opcional: incluir filtros si quieres
+    if (searchTerm.trim()) {
+      params.append("search", searchTerm.trim());
+    }
+
+    if (effectiveSedeId) {
+      params.append("sede_id", effectiveSedeId);
+    }
+
+    // 🔥 NUEVO: traer TODOS los datos desde backend
+    const res = await apiFetch(`movements/all-movements-history?${params.toString()}`);
+
+    const data = Array.isArray(res) ? res : [];
+
+    if (!data.length) {
       alerts.warning("No hay datos para exportar");
       return;
     }
 
-    try {
-      if (format === "csv") {
-        exportToCSV(movements, exportColumns, `movimientos_${dateTag}.csv`);
-        return;
-      }
+    const dateTag = new Date().toISOString().slice(0, 10);
 
-      if (format === "excel") {
-        exportToExcel(movements, exportColumns, `movimientos_${dateTag}.xlsx`);
-        return;
-      }
-
-      exportToPDF(movements, exportColumns, `movimientos_${dateTag}.pdf`, "Reporte de Movimientos");
-    } catch (error) {
-      console.error("Error exportando movimientos:", error);
-      alerts.error("No se pudo generar el archivo de exportación");
+    if (format === "csv") {
+      exportToCSV(data, exportColumns, `movimientos_${dateTag}.csv`);
+      return;
     }
-  };
+
+    if (format === "excel") {
+      exportToExcel(data, exportColumns, `movimientos_${dateTag}.xlsx`);
+      return;
+    }
+
+    exportToPDF(data, exportColumns, `movimientos_${dateTag}.pdf`, "Reporte de Movimientos");
+
+  } catch (error) {
+    console.error(error);
+    alerts.error("Error al exportar datos");
+  }
+};
 
   const handleExportSelect = (event) => {
     const format = event.target.value;

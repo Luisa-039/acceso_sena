@@ -75,7 +75,30 @@ def all_movements(db: Session = Depends(get_db),
         return movimiento
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+@router.get("/all-movements-history",  response_model=List[MovementOut])
+def all_movements_history(
+    db: Session = Depends(get_db),
+    user_token: UserOut = Depends(get_current_user),
+    search: str | None = None
+):
+    try:
+        id_rol=user_token.rol_id
+
+        if not verify_permissions(db, id_rol, modulo, 'seleccionar'):
+            raise HTTPException(status_code=401, detail="Usuario no autorizado")
+        scope = resolve_visibility_scope(db, user_token)
+        movimiento = crud_movement.get_all_movements_history(
+            db,
+            sede_id=scope["sede_id"],
+            centro_id=scope["centro_id"],
+            search=search
+        )  
+        if not movimiento:
+            raise HTTPException(status_code=404, detail="Movimientos no encontrados")
+        return movimiento
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
 @router.get("/by-serial",  response_model=List[MovementOut])
 def movement_serial(
