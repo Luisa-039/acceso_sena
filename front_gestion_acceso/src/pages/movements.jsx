@@ -45,6 +45,15 @@ function movements() {
   const isDadoDeBaja = (estado = "") =>
     String(estado).trim().toLowerCase().replaceAll("_", " ") === "dado de baja";
 
+  const getLocalDateTimeString = () => {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(
+      now.getHours()
+    )}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  };
+
   const fetchMovementTypes = async () => {
     try {
       const res = await apiFetch(`type/all-movements-types`);
@@ -108,7 +117,10 @@ function movements() {
 
       await apiFetch(`movements/by-id/${movement.id_movimiento_sede}`, {
         method: "PUT",
-        body: { tipo_id: idTipo },
+        body: {
+          tipo_id: idTipo,
+          fecha_movimiento: getLocalDateTimeString(),
+        },
       });
 
       await fetchMovements();
