@@ -138,7 +138,13 @@ def get_movements_by_autorizacion(db: Session, autorizacion_id: int):
         raise Exception("Error de base de datos al obtener el historial del movimiento")
 
 
-def update_movement_by_id(db: Session, id_movimiento: int, tipo_id: int, usuario_registra: int | None = None) -> bool:
+def update_movement_by_id(
+    db: Session,
+    id_movimiento: int,
+    tipo_id: int,
+    usuario_registra: int | None = None,
+    fecha_movimiento: datetime | None = None,
+) -> bool:
     try:
         current_query = text("""
             SELECT m.id_movimiento_sede, m.equipo_id, tm.nombre_tipo, m.usuario_registra
@@ -166,8 +172,10 @@ def update_movement_by_id(db: Session, id_movimiento: int, tipo_id: int, usuario
         if not target_type:
             return False
 
+# Si el movimiento actual no es "Dado de baja" pero el nuevo tipo sí lo es, se debe actualizar el estado del equipo.
+
         movement_user = usuario_registra or current_movement["usuario_registra"]
-        movement_time = datetime.now(timezone.utc)
+        movement_time = fecha_movimiento or datetime.now(timezone.utc)
         insert_query = text("""
             INSERT INTO movimientos_equipos_sede (
                 equipo_id, autorizacion_id, usuario_registra, fecha_movimiento, tipo_id

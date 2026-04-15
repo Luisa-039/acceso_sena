@@ -14,6 +14,7 @@ class MovementCreate(MovementBase):
 
 class MovementUpdate(BaseModel):
     tipo_id: int
+    fecha_movimiento: Optional[datetime] = None
 
 class MovementOut(MovementBase):
     id_movimiento_sede: int 

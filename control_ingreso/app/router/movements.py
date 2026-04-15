@@ -118,6 +118,7 @@ def update_movement_by_id(
             id_movimiento,
             movement.tipo_id,
             usuario_registra=user_token.id_usuario,
+            fecha_movimiento=movement.fecha_movimiento,
         )
         if not success:
             raise HTTPException(status_code=400, detail="No se pudo actualizar el movimiento")
